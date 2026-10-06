@@ -1,0 +1,1727 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="バンド名を入れると、メンバー・元メンバー・つながり・同じジャンルのバンドがわかる無料の検索アプリ">
+<title>バンド相関図</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#f1f2f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10122a" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="バンド相関図">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: two-ink risograph gig-flyer — misregistered display type, a spinning record as the hero, liner-note "personnel" credits, generated record sleeves for recommendations */
+:root {
+  --paper: #f1f2f6;
+  --surface: #fbfbfd;
+  --ink: #1a1e3a;
+  --muted: #5f6582;
+  --line: #cfd2df;
+  --pink: #ff3d9a;
+  --blue: #2b4fd8;
+  --yellow: #f2b600;
+  --vinyl: #15161c;
+  --vinyl-groove: #23252e;
+  --blend: multiply;
+  --dot: color-mix(in srgb, var(--blue) 14%, transparent);
+  --font-display: "Dela Gothic One", "Hiragino Sans", system-ui, sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #10122a; --surface: #181b3a; --ink: #eef0ff; --muted: #9ea4c6; --line: #2c3058;
+    --pink: #ff5fae; --blue: #7d98ff; --yellow: #ffd23f; --vinyl: #050609; --vinyl-groove: #14161e;
+    --blend: screen; --dot: color-mix(in srgb, var(--blue) 12%, transparent);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #10122a; --surface: #181b3a; --ink: #eef0ff; --muted: #9ea4c6; --line: #2c3058;
+  --pink: #ff5fae; --blue: #7d98ff; --yellow: #ffd23f; --vinyl: #050609; --vinyl-groove: #14161e;
+  --blend: screen; --dot: color-mix(in srgb, var(--blue) 12%, transparent);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: 7px 7px;
+  color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.7;
+  min-height: 100%;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+::selection { background: var(--yellow); color: #1a1e3a; }
+
+.wrap { overflow-x: clip; max-width: 1040px; margin: 0 auto; padding-inline: 24px; padding-block: 28px 72px; }
+.view { display: flex; flex-direction: column; gap: 40px; animation: enter .45s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes enter { from { opacity: .001; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ---- shared type ---- */
+.kicker { margin: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--pink); }
+.misreg { position: relative; display: inline-block; color: var(--blue); isolation: isolate; }
+.misreg::before { content: attr(data-text); position: absolute; inset: 0; color: var(--pink); transform: translate(.045em, .04em); mix-blend-mode: var(--blend); z-index: 1; pointer-events: none; }
+.fine { margin: 0; color: var(--muted); font-size: 12px; max-width: 62ch; line-height: 1.7; }
+
+/* ---- top bar ---- */
+.topbar { display: flex; align-items: center; gap: 16px 20px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+.logo { all: unset; cursor: pointer; font-family: var(--font-display); font-size: 20px; line-height: 1.2; color: var(--ink); display: inline-flex; align-items: center; gap: 10px; }
+.logo:focus-visible { outline: 3px solid var(--pink); outline-offset: 4px; }
+.logo .mini-rec { display: block; width: 26px; height: 26px; }
+.topbar form { flex: 1 1 260px; }
+
+/* ---- search ---- */
+form.search { display: flex; align-items: stretch; background: var(--surface); border: 2px solid var(--ink); border-radius: 999px; padding: 5px; box-shadow: 5px 5px 0 var(--blue); transition: box-shadow .2s, transform .2s; }
+form.search:focus-within { box-shadow: 7px 7px 0 var(--pink); transform: translate(-2px, -2px); }
+form.search input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 10px 18px; font-size: 18px; font-weight: 700; outline: none; }
+form.search input::placeholder { color: var(--muted); font-weight: 500; }
+form.search button { border: 0; border-radius: 999px; padding: 0 26px; background: var(--ink); color: var(--paper); font-weight: 900; font-size: 15px; letter-spacing: .08em; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+form.search button:hover { background: var(--pink); color: #fff; }
+form.search kbd { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; color: var(--muted); align-self: center; margin-right: 6px; }
+.topbar form.search { box-shadow: 3px 3px 0 var(--blue); padding: 3px; }
+.topbar form.search input { font-size: 15px; padding: 7px 14px; }
+.topbar form.search button { padding: 0 18px; font-size: 13px; }
+.topbar form.search:focus-within { box-shadow: 4px 4px 0 var(--pink); }
+
+/* ---- record ---- */
+.record { position: relative; aspect-ratio: 1; width: 100%; max-width: 100%; border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 31%, color-mix(in srgb, #fff 9%, transparent) 31.4%, transparent 32%),
+    conic-gradient(from 30deg, transparent 0 8%, color-mix(in srgb, #fff 14%, transparent) 12%, transparent 18% 50%, color-mix(in srgb, #fff 10%, transparent) 58%, transparent 64%),
+    repeating-radial-gradient(circle, var(--vinyl) 0 2px, var(--vinyl-groove) 2.4px 3.2px);
+  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--ink) 60%, transparent);
+}
+.record .label { position: absolute; inset: 31%; border-radius: 50%; background: var(--pink); display: grid; place-items: center; text-align: center; overflow: hidden; }
+.record .label::before { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 50%, var(--blue) 50%); mix-blend-mode: var(--blend); opacity: .9; }
+.record .label::after { content: ""; position: absolute; width: 7%; aspect-ratio: 1; border-radius: 50%; background: var(--paper); left: 46.5%; top: 46.5%; }
+.record .label span { position: relative; z-index: 1; font-family: var(--font-mono); font-weight: 700; font-size: clamp(8px, 1.6vw, 12px); letter-spacing: .14em; color: #fff; line-height: 1.5; padding: 0 12%; transform: translateY(-38%); text-transform: uppercase; overflow-wrap: anywhere; }
+.spin { animation: spin 6s linear infinite; }
+.spin.fast { animation-duration: 1.6s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin, .view { animation: none; } }
+
+/* ---- home ---- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; align-items: center; padding-top: 24px; }
+.hero-copy { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.hero h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(48px, 10vw, 104px); line-height: 1.02; letter-spacing: -.01em; }
+.hero h1 .misreg { display: block; }
+.hero .lede { margin: 0; font-size: 16px; max-width: 34em; }
+.hero .lede b { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--yellow) 70%, transparent) 62%); font-weight: 700; }
+.hero-art { position: relative; justify-self: center; width: min(100%, 380px); }
+.hero-art .sticker { position: absolute; right: -6px; top: 4%; background: var(--yellow); color: #1a1e3a; font-family: var(--font-mono); font-weight: 700; font-size: 12px; letter-spacing: .1em; padding: 10px 12px; border-radius: 50%; aspect-ratio: 1; display: grid; place-items: center; text-align: center; line-height: 1.3; transform: rotate(12deg); width: 92px; box-shadow: 3px 3px 0 var(--ink); }
+
+.shelf { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 32px; }
+.shelf h2 { margin: 0 0 14px; font-family: var(--font-display); font-weight: 400; font-size: 20px; display: flex; align-items: baseline; gap: 12px; }
+.shelf h2 .kicker { font-size: 10px; }
+.shelf .clear { margin-left: auto; background: none; border: 0; color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.stickers { display: flex; flex-wrap: wrap; gap: 10px; }
+.stk { border: 2px solid var(--ink); background: var(--surface); padding: 6px 14px; font-weight: 700; font-size: 14px; cursor: pointer; border-radius: 3px; transform: rotate(var(--r, 0deg)); transition: transform .15s, background .15s, color .15s; box-shadow: 2px 2px 0 var(--ink); }
+.stk:hover { transform: rotate(0deg) translateY(-2px); background: var(--blue); color: #fff; }
+.stk.alt { border-radius: 999px; }
+.stk.alt:hover { background: var(--pink); }
+
+/* ---- loading ---- */
+.loading-stage { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 40px; align-items: center; padding-top: 12px; }
+.turntable { position: relative; width: 100%; max-width: 300px; }
+.arm { position: absolute; right: -8%; top: -6%; width: 46%; height: 70%; transform-origin: 85% 10%; transform: rotate(18deg); animation: arm 1.2s ease-out both; pointer-events: none; }
+@keyframes arm { from { transform: rotate(-4deg); } to { transform: rotate(18deg); } }
+.arm line, .arm circle, .arm rect { stroke: var(--ink); }
+.loading-copy { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.loading-copy h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 56px); line-height: 1.1; overflow-wrap: anywhere; }
+.eq { display: flex; gap: 4px; align-items: flex-end; height: 26px; }
+.eq i { width: 6px; background: var(--blue); animation: eq .9s ease-in-out infinite; border-radius: 1px; }
+.eq i:nth-child(2n) { background: var(--pink); animation-delay: -.3s; }
+.eq i:nth-child(3n) { animation-delay: -.6s; }
+@keyframes eq { 0%, 100% { height: 20%; } 50% { height: 100%; } }
+@media (prefers-reduced-motion: reduce) { .eq i { animation: none; height: 60%; } .arm { animation: none; } }
+.ghost-btn { align-self: flex-start; background: none; border: 2px solid var(--ink); padding: 6px 18px; border-radius: 999px; font-weight: 700; cursor: pointer; font-size: 13px; }
+.ghost-btn:hover { background: var(--ink); color: var(--paper); }
+.loading-copy p { margin: 0; color: var(--muted); max-width: 40ch; }
+
+/* ---- trail ---- */
+.trail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 12px; }
+.trail .lbl { color: var(--muted); letter-spacing: .12em; text-transform: uppercase; font-weight: 700; margin-right: 4px; }
+.trail button { background: none; border: 1px dashed var(--muted); border-radius: 999px; padding: 1px 10px; cursor: pointer; color: var(--muted); font-family: var(--font-body); font-size: 13px; }
+.trail button:hover { border-style: solid; border-color: var(--blue); color: var(--blue); }
+.trail .arr { color: var(--pink); }
+.trail .here { font-family: var(--font-body); font-size: 13px; font-weight: 700; padding: 1px 10px; border-radius: 999px; background: var(--ink); color: var(--paper); }
+
+/* ---- result header ---- */
+.flyer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 240px); gap: 36px; align-items: start; }
+.flyer-copy { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.flyer h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(38px, 8vw, 84px); line-height: 1.05; overflow-wrap: anywhere; text-wrap: balance; }
+.stamps { display: flex; flex-wrap: wrap; gap: 10px; }
+.stamp { font-family: var(--font-mono); font-weight: 700; font-size: 12px; letter-spacing: .08em; padding: 4px 10px; border: 2px solid currentColor; border-radius: 3px; transform: rotate(var(--r, -1.5deg)); font-variant-numeric: tabular-nums; }
+.stamp.k-band { color: var(--blue); } .stamp.k-artist { color: var(--pink); }
+.stamp.plain { color: var(--ink); }
+.flyer .note { margin: 0; font-size: 16px; max-width: 40em; line-height: 1.9; }
+.flyer-side { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.flyer-art { position: relative; isolation: isolate; }
+.flyer-art.drag .sleeve { outline: 3px dashed var(--pink); outline-offset: 6px; }
+.sleeve.photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.art-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.art-tools .tool { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 2px solid var(--ink); border-radius: 999px; background: var(--surface); font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--ink); text-decoration: none; line-height: 1.4; }
+.art-tools .tool:hover { background: var(--ink); color: var(--paper); }
+.art-tools .tool.quiet { border-color: transparent; background: none; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding-inline: 4px; }
+.art-tools .tool.quiet:hover { color: var(--pink); background: none; }
+.art-tools input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.art-tools label.tool:focus-within { outline: 3px solid var(--pink); outline-offset: 3px; }
+.art-hint { margin: -10px 0 0; font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 700; z-index: 30; box-shadow: 3px 3px 0 var(--pink); max-width: calc(100% - 32px); }
+.flyer-art .sleeve { box-shadow: 8px 8px 0 var(--ink); }
+.flyer-art .peek { position: absolute; width: 92%; top: 4%; right: -22%; z-index: -1; }
+
+/* ---- liner notes ---- */
+.liner { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 36px 48px; border-top: 2px solid var(--ink); padding-top: 32px; }
+.credits h2 { margin: 0 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.credits h2 .en { font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--c); }
+.credits h2 .ja { font-size: 16px; font-weight: 900; }
+.credits h2 .n { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-left: auto; }
+.credits ul { list-style: none; margin: 0; padding: 0; }
+.credit { width: 100%; display: flex; align-items: baseline; gap: 10px; background: none; border: 0; padding: 9px 0; cursor: pointer; text-align: left; border-bottom: 1px solid var(--line); }
+.credit .who { font-weight: 900; font-size: 17px; line-height: 1.35; overflow-wrap: anywhere; min-width: 0; transition: color .15s; }
+.credit .who small { display: block; font-weight: 500; font-size: 12.5px; color: var(--muted); }
+.credit .lead { flex: 1 1 24px; min-width: 24px; border-bottom: 2px dotted var(--line); transform: translateY(-5px); align-self: flex-start; margin-top: 16px; }
+.credit .when { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; align-self: flex-start; padding-top: 4px; }
+.credit .go { font-family: var(--font-mono); color: var(--c); opacity: 0; transform: translateX(-4px); transition: opacity .15s, transform .15s; align-self: flex-start; padding-top: 2px; }
+.credit:hover .who { color: var(--c); }
+.credit:hover .go, .credit:focus-visible .go { opacity: 1; transform: none; }
+.c-member { --c: var(--blue); } .c-former { --c: var(--muted); } .c-support { --c: var(--yellow); }
+.c-produce { --c: var(--pink); } .c-influence { --c: color-mix(in srgb, var(--pink) 50%, var(--yellow)); } .c-collab { --c: color-mix(in srgb, var(--blue) 55%, var(--pink)); }
+
+/* ---- recommendations ---- */
+.recs { display: flex; flex-direction: column; gap: 20px; border-top: 2px solid var(--ink); padding-top: 32px; }
+.recs-head { display: flex; flex-direction: column; gap: 6px; }
+.recs-head h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(24px, 4.4vw, 36px); line-height: 1.2; text-wrap: balance; }
+.recs-head h2 em { font-style: normal; color: var(--pink); }
+.crate { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 28px 22px; }
+.lp { display: flex; flex-direction: column; gap: 10px; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; min-width: 0; }
+.lp-art { position: relative; }
+.lp-art .record { position: absolute; width: 88%; top: 6%; left: 6%; transition: transform .35s cubic-bezier(.2,.7,.2,1); }
+.lp-art .sleeve { position: relative; z-index: 1; transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s; box-shadow: 4px 4px 0 var(--ink); }
+.lp:hover .lp-art .record, .lp:focus-visible .lp-art .record { transform: translateX(30%) rotate(40deg); }
+.lp:hover .lp-art .sleeve, .lp:focus-visible .lp-art .sleeve { transform: translate(-3%, -2%) rotate(-2deg); box-shadow: 6px 6px 0 var(--pink); }
+@media (prefers-reduced-motion: reduce) { .lp-art .record, .lp-art .sleeve { transition: none; } }
+.lp-name { font-weight: 900; font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
+.lp-name .tag { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin-left: 6px; text-transform: uppercase; }
+.lp-why { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ---- generated sleeve ---- */
+.sleeve { position: relative; aspect-ratio: 1; width: 100%; max-width: 100%; overflow: hidden; border: 2px solid var(--ink); background-color: var(--surface); }
+.sleeve .l1, .sleeve .l2 { position: absolute; inset: 0; mix-blend-mode: var(--blend); }
+.sleeve .title { position: absolute; left: 8%; right: 8%; bottom: 7%; font-family: var(--font-display); font-size: clamp(14px, 2.2vw, 20px); line-height: 1.1; color: var(--ink); background: var(--surface); padding: 4px 6px; justify-self: start; width: fit-content; max-width: 84%; overflow-wrap: anywhere; z-index: 2; }
+.sleeve .cat { position: absolute; top: 6%; right: 7%; font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--ink); background: var(--surface); padding: 1px 5px; z-index: 2; letter-spacing: .08em; }
+
+/* ---- empty / error ---- */
+.notice { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 32px; align-items: center; }
+.notice h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(30px, 6vw, 52px); line-height: 1.1; overflow-wrap: anywhere; }
+.notice p { margin: 0; max-width: 44ch; }
+.notice .stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.broken { filter: grayscale(1); opacity: .5; }
+
+.foot { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; border-top: 1px dashed var(--line); padding-top: 18px; }
+.src { color: var(--blue); font-weight: 700; margin-left: 8px; white-space: nowrap; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--blue); font-weight: 700; cursor: pointer; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+
+
+/* ---- browse ---- */
+.still .view { animation: none; }
+.browse { display: flex; flex-direction: column; gap: 18px; border-top: 2px solid var(--ink); padding-top: 28px; }
+.browse-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.browse-head h2 { margin: 4px 0 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(24px, 4.4vw, 36px); line-height: 1.2; }
+.browse .count { margin: 0; font-size: 13px; color: var(--muted); }
+.browse .count b { font-family: var(--font-mono); font-size: 26px; color: var(--pink); margin-right: 4px; font-variant-numeric: tabular-nums; }
+.filters { display: flex; flex-direction: column; gap: 10px; }
+.filter-row { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; }
+.fchip { flex: none; border: 1.5px solid var(--line); background: var(--surface); padding: 5px 13px; border-radius: 999px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; color: var(--ink); }
+.fchip:hover { border-color: var(--ink); }
+.fchip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); box-shadow: 2px 2px 0 var(--pink); }
+.result-line { margin: 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.result-line .sel { font-weight: 900; font-size: 16px; }
+.result-line .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.bins { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 10px; }
+.bin { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px; border: 2px solid var(--ink); border-radius: 4px; background: var(--surface); text-align: left; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.bin:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--blue); }
+.bin-art .sleeve { border-width: 1.5px; }
+.bin-art .sleeve .cat { display: none; }
+.bin-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+.bin-name { font-weight: 900; font-size: 15px; overflow-wrap: anywhere; }
+.bin-meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.bin-tags { font-size: 11px; color: var(--blue); font-weight: 700; margin-top: 2px; }
+.more { align-self: center; }
+.ai-box { display: flex; flex-direction: column; gap: 12px; padding: 18px; border: 2px dashed var(--pink); border-radius: 8px; background: color-mix(in srgb, var(--pink) 5%, var(--surface)); }
+.ai-btn { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; text-align: left; border: 0; background: var(--pink); color: #fff; font-weight: 900; padding: 10px 18px; border-radius: 999px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font-size: 14px; }
+.ai-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.ai-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; flex: none; }
+.ai-loading { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-weight: 700; font-size: 14px; }
+.ai-loading .eq { height: 20px; }
+.ai-title { margin: 0; font-size: 16px; font-weight: 900; display: flex; flex-direction: column; gap: 2px; }
+.ai-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); column-gap: 28px; }
+.ai-list li { border-bottom: 1px solid var(--line); }
+.ai-list button { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; background: none; border: 0; padding: 9px 0; text-align: left; cursor: pointer; }
+.ai-name { font-weight: 900; font-size: 15px; overflow-wrap: anywhere; }
+.ai-name small { font-family: var(--font-mono); font-weight: 400; font-size: 11px; color: var(--muted); margin-left: 8px; }
+.ai-note { grid-column: 1; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.ai-list .go { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: var(--pink); font-family: var(--font-mono); }
+.ai-list button:hover .ai-name { color: var(--pink); }
+.stamp.lib { color: color-mix(in srgb, var(--yellow) 55%, var(--ink)); }
+
+/* ---- editor / my entries ---- */
+.editor-head { display: flex; flex-direction: column; gap: 12px; }
+.editor-head h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(34px, 7vw, 64px); line-height: 1.1; }
+.editor { display: flex; flex-direction: column; gap: 18px; padding: 24px; border: 2px solid var(--ink); background: var(--surface); box-shadow: 6px 6px 0 var(--blue); border-radius: 4px; max-width: 820px; }
+.f-row { display: flex; flex-wrap: wrap; gap: 14px; }
+.f-row > .field { flex: 1 1 150px; min-width: 0; }
+.f-row.cols > .field { flex: 1 1 260px; }
+.field { display: flex; flex-direction: column; gap: 6px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.field.wide { width: 100%; }
+.field > span, .field legend { font-size: 12px; font-weight: 900; letter-spacing: .04em; padding: 0; }
+.field em { font-style: normal; color: var(--pink); font-size: 11px; margin-left: 6px; }
+.field input:not([type=radio]):not([type=checkbox]), .field textarea { width: 100%; min-width: 0; border: 2px solid var(--line); border-radius: 4px; background: var(--paper); padding: 9px 12px; font-size: 15px; line-height: 1.6; }
+.field input:focus, .field textarea:focus { border-color: var(--ink); outline: none; box-shadow: 3px 3px 0 var(--pink); }
+.field textarea { resize: vertical; }
+.seg { display: flex; border: 2px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg label { flex: 1; text-align: center; cursor: pointer; padding: 8px 10px; font-weight: 700; font-size: 14px; background: var(--paper); }
+.seg input, .gpick input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--ink); color: var(--paper); }
+.gpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.gpick label span { display: inline-block; border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 700; cursor: pointer; background: var(--paper); }
+.gpick label:has(input:checked) span { background: var(--blue); color: #fff; border-color: var(--blue); }
+.seg label:has(input:focus-visible), .gpick label:has(input:focus-visible) span { outline: 3px solid var(--pink); outline-offset: 2px; }
+.ed-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.save-btn { border: 0; background: var(--pink); color: #fff; font-weight: 900; font-size: 15px; padding: 11px 28px; border-radius: 999px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+.save-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+#e-err { color: var(--pink); font-weight: 700; font-size: 13px; }
+.add-mine { display: inline-flex; align-items: center; gap: 6px; border: 2px solid var(--ink); background: var(--yellow); color: #1a1e3a; font-weight: 900; font-size: 13px; padding: 6px 14px; border-radius: 999px; cursor: pointer; box-shadow: 2px 2px 0 var(--ink); }
+.add-mine:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+.browse-head .head-side { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.my-badge { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; letter-spacing: .1em; color: #1a1e3a; background: var(--yellow); padding: 0 5px; border-radius: 2px; margin-left: 6px; vertical-align: 2px; }
+.stamp.mine { color: var(--pink); }
+.mine-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.danger-btn { background: none; border: 2px solid var(--pink); color: var(--pink); font-weight: 900; font-size: 13px; padding: 5px 16px; border-radius: 999px; cursor: pointer; }
+.danger-btn.solid { background: var(--pink); color: #fff; }
+@media (max-width: 760px) { .editor { padding: 16px; box-shadow: 4px 4px 0 var(--blue); } }
+
+/* ---- install banner ---- */
+.install { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 10px; background: var(--surface); box-shadow: 3px 3px 0 var(--pink); max-width: 560px; }
+.install-ico { width: 40px; height: 40px; border-radius: 10px; background: url("icons/icon-192.png") center / cover; }
+.install p { margin: 0; font-size: 13px; line-height: 1.55; min-width: 0; }
+.install p b { display: block; font-size: 14px; }
+.install-btn { border: 0; background: var(--ink); color: var(--paper); font-weight: 900; font-size: 13px; padding: 8px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.install-btn:hover { background: var(--pink); color: #fff; }
+.install-x { border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 6px; line-height: 1; }
+.share-ico { display: inline-block; border: 1.5px solid currentColor; border-radius: 4px; padding: 0 4px; margin: 0 3px; font-size: 11px; }
+.offline-note { margin: 0; font-size: 13px; font-weight: 700; color: var(--pink); }
+@media (max-width: 520px) { .install { grid-template-columns: auto minmax(0, 1fr) auto; } .install-btn { grid-column: 2 / -1; justify-self: start; } }
+@media (display-mode: standalone) { .wrap { padding-block-start: 12px; } }
+
+@media (max-width: 760px) {
+  .wrap { padding-inline: 16px; padding-block: 18px 56px; }
+  .view { gap: 32px; }
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-top: 8px; }
+  .hero-art { order: -1; width: min(62%, 240px); justify-self: end; margin-bottom: -40px; }
+  .hero-art .sticker { width: 72px; font-size: 10px; right: auto; left: -30px; top: 50%; }
+  form.search input { font-size: 16px; padding: 9px 12px; }
+  form.search button { padding: 0 18px; }
+  form.search kbd { display: none; }
+  .loading-stage { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .turntable { max-width: 220px; }
+  .flyer { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .flyer-side { order: -1; gap: 18px; }
+  .flyer-art { width: min(56%, 200px); }
+  .flyer-art .peek { right: -40%; }
+  .liner { grid-template-columns: minmax(0, 1fr); }
+  .crate { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
+  .notice { grid-template-columns: minmax(0, 1fr); }
+  .notice .record { max-width: 140px; }
+  .credit .go { opacity: 1; transform: none; }
+}
+</style>
+
+</head>
+<body>
+<main class="wrap" id="app"></main>
+
+<script>
+const REL = {
+  member:    "メンバー",
+  former:    "元メンバー",
+  support:   "サポート",
+  produce:   "プロデュース",
+  influence: "影響",
+  collab:    "共演・コラボ",
+};
+const REL_KEYS = Object.keys(REL);
+const EXAMPLES = ["NUMBER GIRL", "東京事変", "YMO", "くるり", "Radiohead", "King Gizzard & the Lizard Wizard"];
+const KEY_RECENT = "band-lookup-recent-v1";
+const KEY_CACHE = "band-free-cache-v1";
+const KEY_IMG = "band-lookup-img-v1";
+let images = (() => { try { return JSON.parse(localStorage.getItem(KEY_IMG)) || {}; } catch (e) { return {}; } })();
+const imgOf = name => images[String(name || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim()] || null;
+
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const norm = s => String(s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+
+function readJSON(k, fallback) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch (e) { return fallback; } }
+function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+
+/* ---------- built-in library ---------- */
+const GENRES = {
+  indie: "インディーズ", math: "エモ・マスロック", rock: "ロック", alt: "オルタナ・インディー", punk: "パンク・メロコア", metal: "メタル・ラウド", pop: "ポップ",
+  electro: "エレクトロ・テクノ", vk: "ビジュアル系", shoe: "シューゲイザー・ポストロック", folk: "フォーク・ルーツ", psy: "サイケ・プログレ",
+};
+const LIB = [];
+const LIBIDX = {};
+function B(region, name, origin, year, years, genres, note, members, former, extra, similar) {
+  const split = s => { const i = s.indexOf("|"); return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + 1)]; };
+  const related = [
+    ...members.map(m => { const [n, p] = split(m); return { name: n, kind: "artist", type: "member", direction: "out", years: "", note: p }; }),
+    ...former.map(m => { const [n, p] = split(m); return { name: n, kind: "artist", type: "former", direction: "out", years: "", note: p }; }),
+    ...extra.map(([n, type, dir, note, kind]) => ({ name: n, kind: kind || "artist", type, direction: dir || "out", years: "", note: note || "" })),
+  ];
+  const rec = { name, kind: "band", origin, years, note, related, region, year, genres, builtin: true,
+    similar: similar.map(s => { const [n, r] = split(s); return { name: n, kind: "band", reason: r }; }) };
+  LIB.push(rec); LIBIDX[norm(name)] = rec;
+}
+// region, name, origin, start year, years, genres, note, members, former, extra relations, similar
+B("J","YMO","東京",1978,"1978–1983, 1993, 2007–",["electro","pop"],"細野晴臣・坂本龍一・高橋幸宏によるテクノポップの金字塔。シンセサイザーとコンピューターを駆使し、世界の電子音楽に影響を与えた。",
+ ["細野晴臣|ベース・シンセ","坂本龍一|キーボード（2023年死去）","高橋幸宏|ドラム・ボーカル（2023年死去）"],[],[["はっぴいえんど","collab","out","細野晴臣の前身バンド","band"]],
+ ["Kraftwerk|電子音楽の源流","P-MODEL|80年代日本のテクノポップ","電気グルーヴ|日本テクノの系譜","サディスティック・ミカ・バンド|高橋幸宏の前身","Perfume|現代のテクノポップ"]);
+B("J","はっぴいえんど","東京",1969,"1969–1972",["folk","rock"],"日本語でロックを歌うことを切り開いた伝説的バンド。後の日本のポップスの土台を作った。",
+ ["細野晴臣|ベース","大瀧詠一|ギター・ボーカル（2013年死去）","松本隆|ドラム・作詞","鈴木茂|ギター"],[],[["Buffalo Springfield","influence","in","サウンドの手本","band"]],
+ ["シュガー・ベイブ|シティポップの源流","サニーデイ・サービス|日本語ロックの継承者","くるり|ルーツへの敬意","はちみつぱい|同時代の日本語ロック","cero|現代の東京ポップ"]);
+B("J","シュガー・ベイブ","東京",1973,"1973–1976",["pop","folk"],"山下達郎と大貫妙子が在籍した、シティポップの源流とされるバンド。唯一のアルバム『SONGS』で知られる。",
+ ["山下達郎|ギター・ボーカル","大貫妙子|キーボード・ボーカル"],[],[],
+ ["はっぴいえんど|日本語ポップスの原点","cero|洗練された都会のポップ","Yogee New Waves|現代のシティポップ","The Beach Boys|コーラスワークの手本","サニーデイ・サービス|ノスタルジックな日本語ポップ"]);
+B("J","サザンオールスターズ","神奈川",1978,"1978–",["rock","pop"],"桑田佳祐率いる国民的ロックバンド。湘南の風景と独特の言葉遊びで長く愛される。",
+ ["桑田佳祐|ボーカル・ギター","原由子|キーボード・ボーカル","関口和之|ベース","松田弘|ドラム","野沢秀行|パーカッション"],["大森隆志|ギター"],[],
+ ["Mr.Children|国民的なメロディ","TUBE|夏と湘南のサウンド","ユニコーン|ユーモアのあるロック","米米CLUB|エンタメ性の高いステージ","スピッツ|長く愛される歌もの"]);
+B("J","RCサクセション","東京",1968,"1968–1990",["rock"],"忌野清志郎を中心に、日本語ロックとソウルを結びつけたバンド。反骨精神あふれる歌で知られる。",
+ ["忌野清志郎|ボーカル（2009年死去）","仲井戸麗市|ギター","新井田耕造|ドラム"],[],[],
+ ["THE BLUE HEARTS|まっすぐな日本語ロック","ザ・タイマーズ|清志郎の覆面バンド","The Rolling Stones|ロックンロールの手本","ザ・ルースターズ|骨太なビート","エレファントカシマシ|情熱的な歌声"]);
+B("J","THE BLUE HEARTS","東京",1985,"1985–1995",["punk","rock"],"甲本ヒロトと真島昌利によるパンクバンド。まっすぐな言葉とメロディで世代を超えて歌われる。",
+ ["甲本ヒロト|ボーカル","真島昌利|ギター","河口純之助|ベース","梶原徹也|ドラム"],[],[["ザ・クロマニヨンズ","collab","out","ヒロトとマーシーの現在のバンド","band"],["The Clash","influence","in","パンクの手本","band"]],
+ ["ザ・クロマニヨンズ|ヒロトとマーシーの現在","Ramones|シンプルなパンクの原点","GOING STEADY|青春パンクの系譜","MONGOL800|歌えるメロディックパンク","銀杏BOYZ|衝動的な日本語パンク"]);
+B("J","ザ・クロマニヨンズ","東京",2006,"2006–",["punk","rock"],"甲本ヒロトと真島昌利が結成したロックンロールバンド。短くて勢いのある曲を毎年のように発表している。",
+ ["甲本ヒロト|ボーカル","真島昌利|ギター","小林勝|ベース","桐田勝治|ドラム"],[],[],
+ ["THE BLUE HEARTS|同じ二人の原点","Ramones|1分台の疾走感","ギターウルフ|爆音ロックンロール","The Sonics|ガレージロックの元祖","Dr. Feelgood|パブロックの荒々しさ"]);
+B("J","BOØWY","群馬",1981,"1981–1988",["rock"],"氷室京介と布袋寅泰を擁し、日本のビートロックを確立したバンド。後のバンドブームに大きな影響を与えた。",
+ ["氷室京介|ボーカル","布袋寅泰|ギター","松井常松|ベース","高橋まこと|ドラム"],[],[],
+ ["BUCK-TICK|同郷・群馬のビートロック","LUNA SEA|ビートロックの継承","GLAY|BOØWYに憧れた世代","COMPLEX|布袋寅泰の次のユニット","THE MODS|硬派なビート"]);
+B("J","X JAPAN","千葉",1982,"1982–",["metal","vk"],"YOSHIKIとToshlを中心に、ビジュアル系とスピードメタルを確立したバンド。壮大なバラードでも知られる。",
+ ["YOSHIKI|ドラム・ピアノ","Toshl|ボーカル","PATA|ギター","SUGIZO|ギター"],["hide|ギター（1998年死去）","TAIJI|ベース（2011年死去）","HEATH|ベース（2023年死去）"],[],
+ ["LUNA SEA|ビジュアル系の中心","BUCK-TICK|耽美なロック","DIR EN GREY|激しさの継承者","Metallica|スピードメタルの手本","L'Arc-en-Ciel|90年代を代表するバンド"]);
+B("J","LUNA SEA","神奈川",1989,"1989–2000, 2010–",["vk","rock"],"妖艶さと緻密なアンサンブルで90年代ビジュアル系を牽引したバンド。",
+ ["RYUICHI|ボーカル","SUGIZO|ギター・バイオリン","INORAN|ギター","J|ベース","真矢|ドラム"],[],[],
+ ["X JAPAN|SUGIZOが在籍","GLAY|同時代のビジュアル系","L'Arc-en-Ciel|90年代の三強","The Cure|ニューウェーブの影","BUCK-TICK|ダークな美意識"]);
+B("J","GLAY","北海道",1988,"1988–",["rock","vk"],"函館出身のロックバンド。キャッチーなメロディで90年代後半に大ヒットを連発した。",
+ ["TERU|ボーカル","TAKURO|ギター","HISASHI|ギター","JIRO|ベース"],[],[["YOSHIKI","produce","in","デビュー時のプロデュース","artist"]],
+ ["LUNA SEA|同時代のビジュアル系","BOØWY|ビートロックの原点","L'Arc-en-Ciel|90年代を代表するバンド","Mr.Children|ミリオンヒットの時代","THE YELLOW MONKEY|グラマラスなロック"]);
+B("J","L'Arc-en-Ciel","大阪",1991,"1991–",["rock","vk"],"hydeの歌声と幅広い音楽性で、国内外に支持を広げたロックバンド。",
+ ["hyde|ボーカル","ken|ギター","tetsuya|ベース","yukihiro|ドラム"],["hiro|ギター","sakura|ドラム"],[],
+ ["LUNA SEA|90年代の三強","GLAY|同時代のヒットメーカー","The Cure|耽美なニューウェーブ","DIR EN GREY|海外にも届くヘヴィさ","ONE OK ROCK|世界を目指すロック"]);
+B("J","BUCK-TICK","群馬",1983,"1983–",["vk","rock","electro"],"1987年メジャーデビュー。メンバー不動のまま、耽美なロックから電子音まで変化を続けてきた。",
+ ["櫻井敦司|ボーカル（2023年死去）","今井寿|ギター","星野英彦|ギター","樋口豊|ベース","ヤガミ・トール|ドラム"],[],[],
+ ["BOØWY|同郷・群馬の先輩","Bauhaus|ゴシックロックの源流","DIR EN GREY|ダークな表現","Depeche Mode|電子音と退廃美","X JAPAN|ビジュアル系の黎明期"]);
+B("J","DIR EN GREY","大阪",1997,"1997–",["metal","vk"],"激しいサウンドと痛みを描く表現で、海外ツアーも多く行うヘヴィロックバンド。",
+ ["京|ボーカル","薫|ギター","Die|ギター","Toshiya|ベース","Shinya|ドラム"],[],[["YOSHIKI","produce","in","初期シングルのプロデュース","artist"]],
+ ["X JAPAN|ヘヴィさの原点","Deftones|轟音と美しさ","Tool|複雑で重いサウンド","BUCK-TICK|ダークな美意識","ONE OK ROCK|海外で活躍する日本のバンド"]);
+B("J","Mr.Children","東京",1989,"1989–",["pop","rock"],"桜井和寿の歌と言葉で、90年代以降のJ-POPを代表するバンド。数多くのミリオンヒットを持つ。",
+ ["桜井和寿|ボーカル・ギター","田原健一|ギター","中川敬輔|ベース","鈴木英哉|ドラム"],[],[["小林武史","produce","in","長年のプロデューサー","artist"]],
+ ["スピッツ|90年代を代表する歌もの","サザンオールスターズ|国民的バンド","BUMP OF CHICKEN|物語のある歌詞","back number|切ない歌ものロック","Official髭男dism|現代のメロディメーカー"]);
+B("J","スピッツ","東京",1987,"1987–",["pop","rock","alt"],"草野マサムネの透明な歌声と独特の歌詞で、長く愛されるロックバンド。",
+ ["草野マサムネ|ボーカル・ギター","三輪テツヤ|ギター","田村明浩|ベース","﨑山龍男|ドラム"],[],[],
+ ["Mr.Children|90年代を代表する歌もの","くるり|ギターポップの感性","The Smiths|きらめくギターと文学性","フジファブリック|ひねりのあるポップ","GRAPEVINE|味わい深いギターロック"]);
+B("J","ユニコーン","広島",1986,"1986–1993, 2009–",["rock","pop"],"奥田民生を中心に、ユーモアと遊び心あふれる曲で人気を集めたロックバンド。全員が作曲もする。",
+ ["奥田民生|ボーカル・ギター","手島いさむ|ギター","EBI|ベース","ABEDON|キーボード","川西幸一|ドラム"],[],[],
+ ["サザンオールスターズ|遊び心のあるロック","THE YELLOW MONKEY|90年代ロック","エレファントカシマシ|味のあるボーカル","The Beatles|多彩なソングライティング","くるり|自由な作風"]);
+B("J","THE YELLOW MONKEY","東京",1988,"1988–2004, 2016–",["rock"],"吉井和哉を中心に、グラムロックの華やかさと歌謡性を併せ持つロックバンド。",
+ ["吉井和哉|ボーカル","菊地英昭|ギター","廣瀬洋一|ベース","菊地英二|ドラム"],[],[["David Bowie","influence","in","グラムロックの手本","artist"]],
+ ["David Bowie|グラムロックの源流","T. Rex|グラマラスなギター","GLAY|90年代のヒットロック","エレファントカシマシ|情熱的なロック","ユニコーン|90年代を代表するバンド"]);
+B("J","エレファントカシマシ","東京",1981,"1981–",["rock"],"宮本浩次の激しく情熱的な歌声で知られるロックバンド。デビュー以来メンバーは変わっていない。",
+ ["宮本浩次|ボーカル・ギター","石森敏行|ギター","高緑成治|ベース","冨永義之|ドラム"],[],[],
+ ["RCサクセション|日本語ロックの先輩","THE YELLOW MONKEY|90年代ロック","ザ・クロマニヨンズ|まっすぐなロック","銀杏BOYZ|むき出しの感情","THEE MICHELLE GUN ELEPHANT|骨太なバンドサウンド"]);
+B("J","THEE MICHELLE GUN ELEPHANT","東京",1991,"1991–2003",["rock","punk"],"チバユウスケのしゃがれ声と鋭いギターで、ガレージロックを日本のメインストリームに押し上げた。",
+ ["チバユウスケ|ボーカル（2023年死去）","アベフトシ|ギター（2009年死去）","ウエノコウジ|ベース","クハラカズユキ|ドラム"],[],[],
+ ["BLANKEY JET CITY|同時代の硬派なロック","Dr. Feelgood|パブロックの源流","The White Stripes|ガレージロックの再興","NUMBER GIRL|鋭いギターの系譜","ザ・クロマニヨンズ|ロックンロールの継承"]);
+B("J","BLANKEY JET CITY","愛知",1987,"1987–2000",["rock","punk"],"浅井健一を中心とした3ピース。物語のような歌詞と爆発的な演奏で伝説的な存在。",
+ ["浅井健一|ボーカル・ギター","照井利幸|ベース","中村達也|ドラム"],[],[],
+ ["THEE MICHELLE GUN ELEPHANT|同時代の硬派なロック","NUMBER GIRL|90年代オルタナ","The Stray Cats|ロカビリーの香り","ゆらゆら帝国|独自の世界観","Nirvana|3ピースの爆発力"]);
+B("J","NUMBER GIRL","福岡",1995,"1995–2002, 2019–2022",["alt","punk"],"向井秀徳率いるオルタナティブ・ロックバンド。鋭いギターと独特の詞世界で後続に大きな影響を与えた。",
+ ["向井秀徳|ボーカル・ギター","田渕ひさ子|ギター","中尾憲太郎|ベース","アヒト・イナザワ|ドラム"],[],[["ZAZEN BOYS","collab","out","向井秀徳が解散後に結成","band"],["Pixies","influence","in","オルタナの手本","band"],["Sonic Youth","influence","in","ノイズギターの影響","band"]],
+ ["bloodthirsty butchers|轟音と叙情","eastern youth|エモーショナルな日本語ロック","Pixies|オルタナの源流","toe|緊張感のあるアンサンブル","凛として時雨|鋭いギターの系譜"]);
+B("J","ZAZEN BOYS","東京",2003,"2003–",["alt"],"向井秀徳がNUMBER GIRL解散後に結成。変拍子とファンクを取り入れた鋭い演奏が特徴。",
+ ["向井秀徳|ボーカル・ギター","吉兼聡|ギター","MIYA|ベース","松下敦|ドラム"],["アヒト・イナザワ|ドラム","日向秀和|ベース","吉田一郎|ベース"],[["NUMBER GIRL","collab","out","向井秀徳の前身バンド","band"]],
+ ["NUMBER GIRL|向井秀徳の原点","King Crimson|変拍子と緊張感","Talking Heads|ファンク×ニューウェーブ","toe|緻密なアンサンブル","ストレイテナー|日向秀和の現在"]);
+B("J","くるり","京都",1996,"1996–",["alt","rock","folk"],"岸田繁を中心に、作品ごとに音楽性を大きく変え続けるロックバンド。京都音楽博覧会も主催。",
+ ["岸田繁|ボーカル・ギター","佐藤征史|ベース"],["森信行|ドラム","大村達身|ギター","ファンファン|トランペット"],[],
+ ["スーパーカー|同時代のオルタナ","NUMBER GIRL|90年代末の同期","はっぴいえんど|日本語ロックの源流","サニーデイ・サービス|日本語ロックの継承者","Radiohead|音楽性の変化を恐れない姿勢"]);
+B("J","スーパーカー","青森",1995,"1995–2005",["alt","electro","shoe"],"ギターノイズから電子音へと進化した、青森出身のオルタナティブバンド。",
+ ["中村弘二|ボーカル・ギター","フルカワミキ|ベース・ボーカル","いしわたり淳治|ギター・作詞","田沢公大|ドラム"],[],[],
+ ["くるり|同時代のオルタナ","My Bloody Valentine|轟音ギター","Ride|UKシューゲイザー","New Order|ギター×エレクトロ","サカナクション|ロックと電子音の融合"]);
+B("J","サニーデイ・サービス","東京",1992,"1992–2000, 2008–",["folk","rock"],"曽我部恵一を中心に、70年代の日本語ロックを受け継いだ叙情的なバンド。",
+ ["曽我部恵一|ボーカル・ギター","田中貴|ベース"],["丸山晴茂|ドラム（2018年死去）"],[],
+ ["はっぴいえんど|日本語ロックの源流","フィッシュマンズ|90年代東京のバンド","くるり|日本語ロックの継承","cero|東京の街のポップ","シュガー・ベイブ|ノスタルジックなポップ"]);
+B("J","フィッシュマンズ","東京",1987,"1987–1999, 2005–",["alt","psy"],"佐藤伸治の浮遊感ある歌とダブを取り入れたサウンドで、没後も国内外で評価が高まり続ける。",
+ ["茂木欣一|ドラム"],["佐藤伸治|ボーカル（1999年死去）","柏原譲|ベース","小嶋謙介|ギター","HAKASE-SUN|キーボード"],[],
+ ["サニーデイ・サービス|90年代東京のバンド","Lee Perry|ダブの源流","ゆらゆら帝国|サイケデリックな浮遊感","cero|現代の東京の音","Slowdive|夢見心地のサウンド"]);
+B("J","東京事変","東京",2003,"2003–2012, 2020–",["rock","pop"],"椎名林檎を中心に、腕利きの演奏家が集まったバンド。ジャズやファンクも取り込んだ演奏が特徴。",
+ ["椎名林檎|ボーカル","亀田誠治|ベース","刄田綴色|ドラム","浮雲|ギター","伊澤一葉|キーボード"],["晝海幹音|ギター","H ZETT M|キーボード"],[["NUMBER GIRL","influence","in","椎名林檎が影響を公言","band"]],
+ ["NUMBER GIRL|椎名林檎が影響を受けたバンド","ペトロールズ|浮雲（長岡亮介）のバンド","King Gnu|技巧派の歌ものロック","相対性理論|個性的な女性ボーカル","ゆらゆら帝国|独自の美意識"]);
+B("J","ASIAN KUNG-FU GENERATION","神奈川",1996,"1996–",["alt","rock"],"後藤正文を中心としたギターロックバンド。疾走感のある曲とフェス「NANO-MUGEN」で知られる。",
+ ["後藤正文|ボーカル・ギター","喜多建介|ギター","山田貴洋|ベース","伊地知潔|ドラム"],[],[["Weezer","influence","in","パワーポップの手本","band"]],
+ ["Weezer|パワーポップの手本","ELLEGARDEN|00年代のギターロック","BUMP OF CHICKEN|同世代のギターロック","ストレイテナー|00年代の盟友","NUMBER GIRL|日本のオルタナの先輩"]);
+B("J","BUMP OF CHICKEN","千葉",1996,"1996–",["rock","pop"],"藤原基央の物語性のある歌詞で、幅広い世代に支持されるロックバンド。幼なじみ4人で結成。",
+ ["藤原基央|ボーカル・ギター","増川弘明|ギター","直井由文|ベース","升秀夫|ドラム"],[],[],
+ ["ASIAN KUNG-FU GENERATION|同世代のギターロック","RADWIMPS|物語性のある歌詞","Mr.Children|国民的な歌もの","ELLEGARDEN|00年代のロック","Coldplay|大きなスケールのロック"]);
+B("J","RADWIMPS","神奈川",2001,"2001–",["rock","pop"],"野田洋次郎の言葉遊びと独創的な曲作りが特徴。映画『君の名は。』の音楽でも知られる。",
+ ["野田洋次郎|ボーカル・ギター・ピアノ","桑原彰|ギター","武田祐介|ベース"],["山口智史|ドラム"],[],
+ ["BUMP OF CHICKEN|物語のある歌詞","ONE OK ROCK|同世代のロック","Mrs. GREEN APPLE|多彩なポップロック","King Gnu|現代の歌もの","SEKAI NO OWARI|ファンタジックなポップ"]);
+B("J","サカナクション","北海道",2005,"2005–",["electro","rock"],"山口一郎を中心に、ロックとクラブミュージックを融合させたバンド。",
+ ["山口一郎|ボーカル・ギター","岩寺基晴|ギター","草刈愛美|ベース","岡崎英美|キーボード","江島啓一|ドラム"],[],[],
+ ["スーパーカー|ロックと電子音の先駆","New Order|ギター×ダンスビート","電気グルーヴ|日本のテクノ","the band apart|洗練されたグルーヴ","Tame Impala|サイケなダンスロック"]);
+B("J","ELLEGARDEN","千葉",1998,"1998–2008, 2018–",["punk","rock"],"細美武士の英語詞を中心に、メロディックパンクとエモを日本で広めたバンド。",
+ ["細美武士|ボーカル・ギター","生形真一|ギター","高田雄一|ベース","高橋宏貴|ドラム"],[],[],
+ ["Hi-STANDARD|メロディックパンクの先駆","ONE OK ROCK|ELLEGARDENに影響された世代","Weezer|パワーポップ","Jimmy Eat World|エモの名曲","ASIAN KUNG-FU GENERATION|00年代のギターロック"]);
+B("J","Hi-STANDARD","東京",1991,"1991–2000, 2011–",["punk"],"英語詞のメロディックパンクで90年代後半に一大ムーブメントを起こし、「AIR JAM」を主催した。",
+ ["難波章浩|ボーカル・ベース","横山健|ギター"],["恒岡章|ドラム（2023年死去）"],[],
+ ["ELLEGARDEN|メロディックパンクの継承","NOFX|USメロコア","Green Day|ポップパンク","MONGOL800|日本のメロディックパンク","BRAHMAN|AIR JAMの盟友"]);
+B("J","ONE OK ROCK","東京",2005,"2005–",["rock","punk"],"Takaの力強い歌声で、海外ツアーやレーベル契約など世界を舞台に活動するロックバンド。",
+ ["Taka|ボーカル","Toru|ギター","Ryota|ベース","Tomoya|ドラム"],["Alex|ギター"],[],
+ ["ELLEGARDEN|影響を受けた先輩","Linkin Park|ラウドとメロディ","Paramore|エモーショナルなロック","Bring Me The Horizon|現代のラウドロック","RADWIMPS|同世代のロック"]);
+B("J","King Gnu","東京",2015,"2015–",["rock","pop","alt"],"常田大希を中心に、クラシックやヒップホップも取り込んだ技巧派のミクスチャーロックバンド。",
+ ["常田大希|ギター・ボーカル","井口理|ボーカル・キーボード","新井和輝|ベース","勢喜遊|ドラム"],[],[],
+ ["Official髭男dism|同世代のヒットメーカー","東京事変|技巧派バンド","Vaundy|ジャンルを越える感性","RADWIMPS|映画音楽でも活躍","Radiohead|実験と歌の両立"]);
+B("J","Official髭男dism","島根",2012,"2012–",["pop"],"藤原聡のハイトーンとピアノを軸にしたポップバンド。ブラックミュージックの影響も色濃い。",
+ ["藤原聡|ボーカル・ピアノ","小笹大輔|ギター","楢﨑誠|ベース・サックス","松浦匡希|ドラム"],[],[],
+ ["Mrs. GREEN APPLE|現代のポップバンド","King Gnu|同世代の人気バンド","Mr.Children|歌ものの王道","back number|切ないラブソング","Maroon 5|ソウルフルなポップ"]);
+B("J","Mrs. GREEN APPLE","東京",2013,"2013–",["pop","rock"],"大森元貴の作詞作曲を中心に、カラフルなポップロックで幅広い世代に支持される。",
+ ["大森元貴|ボーカル・ギター","若井滉斗|ギター","藤澤涼架|キーボード"],["山中綾華|ドラム","髙野清宗|ベース"],[],
+ ["Official髭男dism|同世代のポップバンド","RADWIMPS|言葉の強さ","SEKAI NO OWARI|ファンタジックなポップ","YOASOBI|物語のあるポップ","BUMP OF CHICKEN|ギターロックの先輩"]);
+B("J","SEKAI NO OWARI","東京",2007,"2007–",["pop","electro"],"ファンタジックな世界観と大がかりなライブ演出で知られるポップバンド。",
+ ["Fukase|ボーカル","Nakajin|ギター","Saori|ピアノ","DJ LOVE|DJ"],[],[],
+ ["Mrs. GREEN APPLE|カラフルなポップ","RADWIMPS|物語のある歌","Coldplay|スタジアム級のポップ","Owl City|夢見心地のエレクトロポップ","YOASOBI|物語のあるポップ"]);
+B("J","YOASOBI","東京",2019,"2019–",["pop","electro"],"小説を音楽にするユニット。Ayaseの作曲とikuraの歌で、『夜に駆ける』『アイドル』など大ヒット。",
+ ["Ayase|作詞作曲・キーボード","ikura|ボーカル"],[],[],
+ ["ヨルシカ|物語性のあるユニット","ずっと真夜中でいいのに。|ネット発の音楽","Mrs. GREEN APPLE|現代のポップ","Official髭男dism|同時代のヒット","Perfume|電子音のポップ"]);
+B("J","Perfume","広島",2000,"2000–",["electro","pop"],"中田ヤスタカのプロデュースによるテクノポップユニット。最先端の映像演出でも知られる。",
+ ["あ～ちゃん|ボーカル","かしゆか|ボーカル","のっち|ボーカル"],[],[["中田ヤスタカ","produce","in","楽曲プロデュース","artist"]],
+ ["capsule|中田ヤスタカのユニット","きゃりーぱみゅぱみゅ|同じプロデューサー","YMO|テクノポップの源流","Daft Punk|フィルター越しの電子音","CHVRCHES|きらめくシンセポップ"]);
+B("J","電気グルーヴ","静岡",1989,"1989–",["electro"],"石野卓球とピエール瀧によるテクノユニット。ユーモアとストイックなテクノの両面を持つ。",
+ ["石野卓球|ボーカル・トラック","ピエール瀧|ボーカル"],["砂原良徳|キーボード"],[],
+ ["YMO|日本テクノの源流","Kraftwerk|電子音楽の原点","サカナクション|ダンスロック","New Order|ダンスミュージックとロック","Underworld|クラブミュージック"]);
+B("J","フリッパーズ・ギター","東京",1987,"1987–1991",["pop","alt"],"小山田圭吾と小沢健二によるネオアコ・ギターポップのユニット。渋谷系の源流とされる。",
+ ["小山田圭吾|ギター・ボーカル","小沢健二|ギター・ボーカル"],[],[],
+ ["Orange Juice|ネオアコの源流","The Smiths|英国ギターポップ","Primal Scream|作風の変化","サニーデイ・サービス|90年代の日本語ポップ","スーパーカー|オルタナの後継"]);
+B("J","GOING STEADY","千葉",1994,"1994–2003",["punk"],"峯田和伸を中心とした青春パンクバンド。解散後、峯田は銀杏BOYZを結成した。",
+ ["峯田和伸|ボーカル・ギター","安孫子真哉|ベース","村井守|ドラム"],[],[["銀杏BOYZ","collab","out","解散後に峯田が結成","band"]],
+ ["銀杏BOYZ|峯田和伸の次のバンド","THE BLUE HEARTS|青春パンクの原点","MONGOL800|メロディックな青春パンク","Hi-STANDARD|メロコアの先輩","ELLEGARDEN|同時代のパンク"]);
+B("J","銀杏BOYZ","東京",2003,"2003–",["punk","alt"],"峯田和伸によるパンクバンド。むき出しの感情とノイズで熱狂的な支持を集める。現在は峯田のソロ体制。",
+ ["峯田和伸|ボーカル・ギター"],["安孫子真哉|ベース","村井守|ドラム","チン中村|ギター"],[["GOING STEADY","collab","out","峯田和伸の前身バンド","band"]],
+ ["GOING STEADY|峯田和伸の前身","THE BLUE HEARTS|衝動的なパンク","エレファントカシマシ|むき出しの歌","andymori|まっすぐなギターロック","My Bloody Valentine|ノイズの美しさ"]);
+B("J","MONGOL800","沖縄",1998,"1998–",["punk"],"沖縄出身のメロディックパンクバンド。インディーズのアルバム『MESSAGE』が大ヒット。",
+ ["キヨサク|ボーカル・ベース","髙里悟|ドラム"],["儀間崇|ギター"],[],
+ ["Hi-STANDARD|メロコアの先駆","GOING STEADY|青春パンク","ORANGE RANGE|沖縄出身のバンド","THE BLUE HEARTS|歌えるパンク","Green Day|ポップパンク"]);
+B("J","ストレイテナー","東京",1998,"1998–",["rock","alt"],"ホリエアツシを中心に結成。日向秀和や大山純が加わり、4人編成のギターロックへ。",
+ ["ホリエアツシ|ボーカル・ギター・キーボード","大山純|ギター","日向秀和|ベース","ナカヤマシンペイ|ドラム"],[],[],
+ ["ASIAN KUNG-FU GENERATION|00年代の盟友","ELLEGARDEN|同時代のロック","ZAZEN BOYS|日向秀和が在籍","9mm Parabellum Bullet|激しいギターロック","Nothing's Carved In Stone|日向秀和の別バンド"]);
+B("J","9mm Parabellum Bullet","神奈川",2004,"2004–",["rock","metal"],"歌謡的なメロディとメタルやパンクの激しさを融合させたロックバンド。",
+ ["菅原卓郎|ボーカル・ギター","滝善充|ギター","中村和彦|ベース","かみじょうちひろ|ドラム"],[],[],
+ ["凛として時雨|激しいギターロック","ストレイテナー|00年代のロック","BLANKEY JET CITY|歌謡性のあるロック","Number Girl|鋭いギター","ONE OK ROCK|ラウドなロック"]);
+B("J","凛として時雨","埼玉",2002,"2002–",["alt","rock"],"TKのハイトーンと345のツインボーカル、激しい展開で知られる3ピース。",
+ ["TK|ボーカル・ギター","345|ベース・ボーカル","ピエール中野|ドラム"],[],[],
+ ["NUMBER GIRL|鋭いギターの系譜","9mm Parabellum Bullet|激しいギターロック","toe|緻密なアンサンブル","At the Drive-In|爆発的な演奏","Mogwai|轟音の美しさ"]);
+B("J","toe","東京",2000,"2000–",["shoe","alt"],"繊細なギターと手数の多いドラムで知られるインストゥルメンタル中心のポストロックバンド。",
+ ["山嵜廣和|ギター","美濃隆章|ギター","山根さとし|ベース","柏倉隆史|ドラム"],[],[],
+ ["MONO|日本のポストロック","American Football|マスロック・エモ","Mogwai|インストの轟音","凛として時雨|緻密なアンサンブル","the band apart|技巧的なギター"]);
+B("J","MONO","東京",1999,"1999–",["shoe"],"轟音と静寂を行き来する壮大なインストゥルメンタルで、海外でも高く評価されるポストロックバンド。",
+ ["Takaakira 'Taka' Goto|ギター","Yoda|ギター","Tamaki|ベース・ピアノ","Dahm Majuri Cipolla|ドラム"],["Yasunori Takada|ドラム"],[],
+ ["Mogwai|轟音ポストロック","Sigur Rós|壮大で幻想的","Godspeed You! Black Emperor|長尺のインスト","toe|日本のポストロック","Explosions in the Sky|叙情的なギター"]);
+B("J","ゆらゆら帝国","東京",1989,"1989–2010",["psy","alt"],"坂本慎太郎を中心としたサイケデリック・ロックバンド。独特の脱力感と緊張感で熱狂的な支持を集めた。",
+ ["坂本慎太郎|ボーカル・ギター","亀川千代|ベース","柴田一郎|ドラム"],[],[],
+ ["フィッシュマンズ|浮遊するサイケデリア","The Velvet Underground|ミニマルな反復","BLANKEY JET CITY|独自の世界観","Can|クラウトロックの反復","相対性理論|脱力した歌"]);
+B("J","チャットモンチー","徳島",2000,"2000–2018",["rock","alt"],"徳島出身のガールズバンド。疾走感のあるギターロックと等身大の言葉で人気を集めた。",
+ ["橋本絵莉子|ボーカル・ギター","福岡晃子|ベース・ドラム"],["高橋久美子|ドラム・作詞"],[],
+ ["SHISHAMO|ガールズギターロック","ASIAN KUNG-FU GENERATION|00年代のギターロック","相対性理論|個性的な女性ボーカル","スピッツ|歌心のあるロック","The Breeders|オルタナのガールズバンド"]);
+B("J","SUPER BEAVER","東京",2005,"2005–",["rock"],"渋谷龍太のまっすぐな言葉で、ライブハウスから大きな会場へ駆け上がったロックバンド。",
+ ["渋谷龍太|ボーカル","柳沢亮太|ギター","上杉研太|ベース","藤原\"35才\"広明|ドラム"],[],[],
+ ["back number|ストレートな歌","BUMP OF CHICKEN|心に届く言葉","ELLEGARDEN|ライブバンドの姿勢","Mrs. GREEN APPLE|現代のロック","サンボマスター|熱いメッセージ"]);
+B("J","cero","東京",2004,"2004–",["pop","alt"],"髙城晶平を中心に、ブラックミュージックやエキゾチカを取り込んだ東京のポップバンド。",
+ ["髙城晶平|ボーカル・ギター","荒内佑|キーボード","橋本翼|ギター"],["柳智之|ドラム"],[],
+ ["はっぴいえんど|東京のポップの系譜","シュガー・ベイブ|都会的なポップ","Yogee New Waves|現代のシティポップ","D'Angelo|ネオソウルのグルーヴ","サニーデイ・サービス|日本語ポップ"]);
+B("J","相対性理論","東京",2006,"2006–",["pop","alt"],"やくしまるえつこの浮遊感ある歌と、不思議な言葉で人気を集めたポップバンド。",
+ ["やくしまるえつこ|ボーカル","永井聖一|ギター"],["真部脩一|ベース","西浦謙助|ドラム"],[],
+ ["チャットモンチー|個性的なガールズロック","ゆらゆら帝国|脱力した感覚","Stereolab|レトロフューチャーなポップ","東京事変|個性派の女性ボーカル","Cocteau Twins|浮遊するボーカル"]);
+B("J","andymori","東京",2006,"2006–2014",["rock","alt"],"小山田壮平を中心に、疾走感あふれるギターロックと詩的な歌詞で人気を集めたバンド。",
+ ["小山田壮平|ボーカル・ギター"],["藤原寛|ベース","後藤大樹|ドラム","岡山健二|ドラム"],[],
+ ["銀杏BOYZ|まっすぐな歌","The Libertines|ガレージなギターロック","くるり|詩的なロック","The Strokes|疾走感あるギター","ASIAN KUNG-FU GENERATION|00年代のギターロック"]);
+B("J","B'z","東京",1988,"1988–",["rock","metal"],"稲葉浩志と松本孝弘によるロックユニット。日本で最も多くのCDを売り上げたアーティストの一つ。",
+ ["稲葉浩志|ボーカル","松本孝弘|ギター"],[],[],
+ ["Aerosmith|ハードロックの手本","Led Zeppelin|ギターリフの源流","GLAY|90年代のヒットロック","Mr.Children|J-POPの時代","Van Halen|ギターヒーロー"]);
+B("J","DREAMS COME TRUE","東京",1988,"1988–",["pop"],"吉田美和の圧倒的な歌声と中村正人のプロデュースで、長く愛されるポップグループ。",
+ ["吉田美和|ボーカル","中村正人|ベース"],["西川隆宏|キーボード"],[],
+ ["Every Little Thing|90年代の女性ボーカル","Official髭男dism|ソウルフルなポップ","サザンオールスターズ|国民的ポップ","Earth, Wind & Fire|ソウルとファンクのグルーヴ","いきものがかり|明るい歌もの"]);
+B("J","ゆず","神奈川",1996,"1996–",["folk","pop"],"北川悠仁と岩沢厚治によるフォークデュオ。横浜の路上ライブから始まった。",
+ ["北川悠仁|ボーカル・ギター","岩沢厚治|ボーカル・ギター"],[],[],
+ ["コブクロ|デュオの歌もの","いきものがかり|路上出身","Simon & Garfunkel|フォークデュオの源流","スピッツ|爽やかな歌もの","はっぴいえんど|日本語フォークロック"]);
+B("W","The Beatles","イギリス・リバプール",1960,"1960–1970",["rock","pop","psy"],"ポピュラー音楽の歴史を変えた4人組。録音技術やアルバムという形式の可能性を大きく広げた。",
+ ["John Lennon|ボーカル・ギター（1980年死去）","Paul McCartney|ボーカル・ベース","George Harrison|ギター（2001年死去）","Ringo Starr|ドラム"],["Pete Best|ドラム","Stuart Sutcliffe|ベース"],[["George Martin","produce","in","ほぼ全作品のプロデューサー","artist"]],
+ ["The Beach Boys|ライバル関係にあった革新者","The Kinks|英国ポップの名曲","The Byrds|フォークロックの同時代","Oasis|ビートルズ直系のUKロック","XTC|ひねりの効いたポップ"]);
+B("W","The Rolling Stones","イギリス・ロンドン",1962,"1962–",["rock"],"ブルースを土台にしたロックンロールで60年以上活動を続ける、世界最長寿クラスのロックバンド。",
+ ["Mick Jagger|ボーカル","Keith Richards|ギター","Ronnie Wood|ギター"],["Charlie Watts|ドラム（2021年死去）","Brian Jones|ギター（1969年死去）","Bill Wyman|ベース","Mick Taylor|ギター"],[],
+ ["The Who|60年代英国ロック","The Kinks|ブリティッシュ・インヴェイジョン","Faces|ロン・ウッドの前身","The Black Crowes|ストーンズ直系のロック","Primal Scream|ロックンロールの継承"]);
+B("W","The Beach Boys","アメリカ・カリフォルニア",1961,"1961–",["pop","rock","psy"],"ブライアン・ウィルソンの作曲と美しいコーラスで知られる。『Pet Sounds』は史上最高のアルバムの一つとされる。",
+ ["Mike Love|ボーカル","Al Jardine|ギター・ボーカル"],["Brian Wilson|ベース・作曲（2025年死去）","Carl Wilson|ギター（1998年死去）","Dennis Wilson|ドラム（1983年死去）"],[],
+ ["The Beatles|互いに刺激しあったライバル","山下達郎|コーラスワークの継承","Animal Collective|現代のサイケポップ","The Zombies|美しいハーモニー","Fleet Foxes|重厚なコーラス"]);
+B("W","The Velvet Underground","アメリカ・ニューヨーク",1964,"1964–1973",["alt","rock"],"ルー・リードとジョン・ケイルを中心に、売れなかったが後のパンクやオルタナの源流となったバンド。",
+ ["Lou Reed|ボーカル・ギター（2013年死去）","John Cale|ベース・ヴィオラ","Sterling Morrison|ギター","Moe Tucker|ドラム"],[],[["Andy Warhol","produce","in","1stアルバムのプロデュース","artist"]],
+ ["Sonic Youth|ノイズとアートの継承","Joy Division|暗くミニマルなロック","Television|NYパンクの詩情","ゆらゆら帝国|反復するサイケデリア","The Jesus and Mary Chain|ノイズポップ"]);
+B("W","The Who","イギリス・ロンドン",1964,"1964–",["rock"],"ピート・タウンゼントの楽曲と爆発的なライブで知られる。ロックオペラ『Tommy』も有名。",
+ ["Roger Daltrey|ボーカル","Pete Townshend|ギター"],["Keith Moon|ドラム（1978年死去）","John Entwistle|ベース（2002年死去）"],[],
+ ["The Kinks|モッズの同時代","The Rolling Stones|60年代英国ロック","The Jam|モッズ・リバイバル","Led Zeppelin|ハードロックの迫力","Pearl Jam|情熱的なライブ"]);
+B("W","Led Zeppelin","イギリス・ロンドン",1968,"1968–1980",["rock","metal"],"ジミー・ペイジのリフとロバート・プラントの歌声で、ハードロックの基礎を築いた。",
+ ["Robert Plant|ボーカル","Jimmy Page|ギター","John Paul Jones|ベース・キーボード","John Bonham|ドラム（1980年死去）"],[],[],
+ ["Black Sabbath|ヘヴィロックの源流","Deep Purple|70年代ハードロック","Queen|壮大なロック","The White Stripes|ブルースロックの再解釈","B'z|ハードロックの継承"]);
+B("W","Pink Floyd","イギリス・ロンドン",1965,"1965–2014",["psy","rock"],"サイケデリックからコンセプトアルバムへ。『The Dark Side of the Moon』は史上屈指のロングセラー。",
+ ["David Gilmour|ギター・ボーカル","Nick Mason|ドラム"],["Roger Waters|ベース・ボーカル","Richard Wright|キーボード（2008年死去）","Syd Barrett|ギター・ボーカル（2006年死去）"],[],
+ ["King Crimson|プログレの双璧","Radiohead|アルバム全体の世界観","Tame Impala|現代のサイケ","Sigur Rós|壮大な音響","Genesis|英国プログレ"]);
+B("W","Queen","イギリス・ロンドン",1970,"1970–",["rock","pop"],"フレディ・マーキュリーの歌声と多重コーラスで、オペラからディスコまで横断したロックバンド。",
+ ["Brian May|ギター","Roger Taylor|ドラム"],["Freddie Mercury|ボーカル（1991年死去）","John Deacon|ベース"],[],
+ ["Led Zeppelin|70年代ハードロック","David Bowie|フレディとの共演","Muse|壮大なロック","Electric Light Orchestra|多重録音のポップ","THE YELLOW MONKEY|華やかなロック"]);
+B("W","Black Sabbath","イギリス・バーミンガム",1968,"1968–2017, 2025",["metal"],"重く遅いリフでヘヴィメタルを生んだとされるバンド。2025年に最後の公演を行った。",
+ ["Ozzy Osbourne|ボーカル（2025年死去）","Tony Iommi|ギター","Geezer Butler|ベース","Bill Ward|ドラム"],["Ronnie James Dio|ボーカル（2010年死去）"],[],
+ ["Led Zeppelin|ハードロックの同時代","Metallica|メタルの継承","Judas Priest|英国メタル","Sleep|ドゥームメタル","Iron Maiden|NWOBHM"]);
+B("W","Kraftwerk","ドイツ・デュッセルドルフ",1970,"1970–",["electro"],"電子楽器だけで構成した音楽で、テクノやヒップホップなど後の電子音楽すべての源流となった。",
+ ["Ralf Hütter|ボーカル・シンセ"],["Florian Schneider|シンセ（2020年死去）","Karl Bartos|電子パーカッション","Wolfgang Flür|電子パーカッション"],[],
+ ["YMO|日本のテクノポップ","Depeche Mode|シンセポップ","New Order|エレクトロとロック","Daft Punk|ロボットの系譜","電気グルーヴ|日本のテクノ"]);
+B("W","Ramones","アメリカ・ニューヨーク",1974,"1974–1996",["punk"],"短く速くシンプルな曲で、パンクロックの原型を作ったバンド。全員が「ラモーン」を名乗った。",
+ ["Joey Ramone|ボーカル（2001年死去）","Johnny Ramone|ギター（2004年死去）","Dee Dee Ramone|ベース（2002年死去）","Marky Ramone|ドラム"],["Tommy Ramone|ドラム（2014年死去）","C.J. Ramone|ベース"],[],
+ ["Sex Pistols|英国パンク","The Clash|パンクの同時代","THE BLUE HEARTS|日本のパンク","Green Day|ポップパンク","ザ・クロマニヨンズ|短く速いロックンロール"]);
+B("W","Sex Pistols","イギリス・ロンドン",1975,"1975–1978, 1996–",["punk"],"ジョニー・ロットンの挑発的な歌で英国社会を揺さぶった、パンクを象徴するバンド。",
+ ["Steve Jones|ギター","Paul Cook|ドラム","Glen Matlock|ベース"],["Johnny Rotten|ボーカル","Sid Vicious|ベース（1979年死去）"],[],
+ ["The Clash|英国パンクの双璧","Ramones|NYパンク","Public Image Ltd|ロットンの次のバンド","The Damned|初期UKパンク","Buzzcocks|ポップなパンク"]);
+B("W","The Clash","イギリス・ロンドン",1976,"1976–1986",["punk","rock"],"パンクにレゲエやロカビリーを取り込み、政治的なメッセージを歌ったバンド。",
+ ["Joe Strummer|ボーカル・ギター（2002年死去）","Paul Simonon|ベース"],["Mick Jones|ギター・ボーカル","Topper Headon|ドラム"],[],
+ ["Sex Pistols|英国パンク","Ramones|パンクの原点","THE BLUE HEARTS|日本のパンク","The Jam|同時代の英国ロック","Rancid|クラッシュ直系のパンク"]);
+B("W","Joy Division","イギリス・マンチェスター",1976,"1976–1980",["alt","rock"],"イアン・カーティスの暗く内省的な歌で、ポストパンクを象徴するバンド。解散後New Orderに。",
+ ["Ian Curtis|ボーカル（1980年死去）","Bernard Sumner|ギター","Peter Hook|ベース","Stephen Morris|ドラム"],[],[["New Order","collab","out","残る3人が結成","band"]],
+ ["New Order|残ったメンバーのバンド","The Cure|ポストパンク","Interpol|現代のポストパンク","Bauhaus|ゴシックロック","The Velvet Underground|暗いミニマリズム"]);
+B("W","New Order","イギリス・マンチェスター",1980,"1980–",["electro","alt"],"Joy Divisionのメンバーが結成。ロックとダンスミュージックを融合し『Blue Monday』で知られる。",
+ ["Bernard Sumner|ボーカル・ギター","Stephen Morris|ドラム","Gillian Gilbert|キーボード","Tom Chapman|ベース"],["Peter Hook|ベース"],[["Joy Division","collab","out","前身バンド","band"]],
+ ["Joy Division|前身バンド","Depeche Mode|シンセポップの同時代","Pet Shop Boys|英国エレクトロポップ","サカナクション|ロック×ダンス","The Smiths|マンチェスターの同時代"]);
+B("W","The Cure","イギリス・クローリー",1978,"1978–",["alt","rock"],"ロバート・スミスを中心に、陰鬱なゴシックときらめくポップの両方を行き来するバンド。",
+ ["Robert Smith|ボーカル・ギター","Simon Gallup|ベース"],["Lol Tolhurst|ドラム・キーボード"],[],
+ ["Joy Division|ポストパンク","Siouxsie and the Banshees|ゴシックの同時代","The Smiths|80年代英国インディー","LUNA SEA|耽美なロック","Interpol|陰影のあるギター"]);
+B("W","The Smiths","イギリス・マンチェスター",1982,"1982–1987",["alt","pop"],"モリッシーの文学的な歌詞とジョニー・マーのきらめくギターで、英国インディーの原点となった。",
+ ["Morrissey|ボーカル","Johnny Marr|ギター","Andy Rourke|ベース（2023年死去）","Mike Joyce|ドラム"],[],[],
+ ["The Stone Roses|マンチェスターの後継","The Cure|80年代英国インディー","Belle and Sebastian|文学的なポップ","スピッツ|きらめくギター","フリッパーズ・ギター|ギターポップ"]);
+B("W","U2","アイルランド・ダブリン",1976,"1976–",["rock"],"ボノの歌とジ・エッジの残響ギターで、スタジアム級の人気を誇るロックバンド。",
+ ["Bono|ボーカル","The Edge|ギター","Adam Clayton|ベース","Larry Mullen Jr.|ドラム"],[],[["Brian Eno","produce","in","多くの作品のプロデュース","artist"]],
+ ["Coldplay|スタジアムロックの後継","R.E.M.|80年代の同時代","Simple Minds|壮大なニューウェーブ","The Killers|アンセム的ロック","Arcade Fire|高揚感のあるロック"]);
+B("W","R.E.M.","アメリカ・アセンズ",1980,"1980–2011",["alt","rock"],"カレッジラジオから世界的バンドになった、アメリカン・オルタナティブの先駆者。",
+ ["Michael Stipe|ボーカル","Peter Buck|ギター","Mike Mills|ベース"],["Bill Berry|ドラム"],[],
+ ["Pixies|80年代USオルタナ","The Smiths|同時代のギターバンド","The Byrds|きらめくギター","Radiohead|内省的なロック","The National|大人のインディーロック"]);
+B("W","Pixies","アメリカ・ボストン",1986,"1986–1993, 2004–",["alt"],"静と動の極端な対比で、Nirvanaなど後のオルタナティブに決定的な影響を与えた。",
+ ["Black Francis|ボーカル・ギター","Joey Santiago|ギター","David Lovering|ドラム"],["Kim Deal|ベース"],[["Steve Albini","produce","in","『Surfer Rosa』の録音","artist"]],
+ ["Nirvana|静と動の継承","Sonic Youth|USオルタナ","NUMBER GIRL|日本で影響を受けたバンド","The Breeders|キム・ディールのバンド","Weezer|ポップなオルタナ"]);
+B("W","Sonic Youth","アメリカ・ニューヨーク",1981,"1981–2011",["alt","shoe"],"変則チューニングとノイズで、インディーロックの美学を作ったバンド。",
+ ["Thurston Moore|ギター・ボーカル","Kim Gordon|ベース・ボーカル","Lee Ranaldo|ギター・ボーカル","Steve Shelley|ドラム"],[],[],
+ ["The Velvet Underground|ノイズとアートの源流","Pixies|USオルタナ","My Bloody Valentine|轟音ギター","Dinosaur Jr.|轟音のインディー","NUMBER GIRL|ノイズギターの継承"]);
+B("W","Nirvana","アメリカ・アバディーン",1987,"1987–1994",["alt","punk"],"カート・コバーンの叫びと『Smells Like Teen Spirit』で、グランジを世界に広めたバンド。",
+ ["Kurt Cobain|ボーカル・ギター（1994年死去）","Krist Novoselic|ベース","Dave Grohl|ドラム"],[],[["Butch Vig","produce","in","『Nevermind』","artist"],["Steve Albini","produce","in","『In Utero』","artist"],["Pixies","influence","in","カートが影響を公言","band"],["Foo Fighters","collab","out","デイヴ・グロールが結成","band"]],
+ ["Pixies|静と動の源流","Pearl Jam|グランジの同時代","Soundgarden|シアトルの重いロック","Foo Fighters|デイヴ・グロールのバンド","Mudhoney|グランジの原点"]);
+B("W","Foo Fighters","アメリカ・シアトル",1994,"1994–",["rock","alt"],"Nirvanaのデイヴ・グロールが結成。力強いアメリカン・ロックで長く第一線に立つ。",
+ ["Dave Grohl|ボーカル・ギター","Nate Mendel|ベース","Pat Smear|ギター","Chris Shiflett|ギター","Rami Jaffee|キーボード"],["Taylor Hawkins|ドラム（2022年死去）"],[["Nirvana","collab","out","デイヴ・グロールの前身バンド","band"]],
+ ["Nirvana|デイヴ・グロールの前身","Queens of the Stone Age|骨太なロック","Weezer|90年代のギターロック","Pearl Jam|90年代アメリカンロック","Green Day|大きな会場のロック"]);
+B("W","Pearl Jam","アメリカ・シアトル",1990,"1990–",["alt","rock"],"エディ・ヴェダーの深い声で、グランジ以降も誠実なロックを続けるバンド。",
+ ["Eddie Vedder|ボーカル","Stone Gossard|ギター","Jeff Ament|ベース","Mike McCready|ギター","Matt Cameron|ドラム"],[],[],
+ ["Nirvana|グランジの同時代","Soundgarden|シアトルの盟友","The Who|情熱的なロック","Foo Fighters|アメリカンロック","Neil Young|共演もした大先輩"]);
+B("W","Red Hot Chili Peppers","アメリカ・ロサンゼルス",1983,"1983–",["rock","alt"],"ファンクとパンクを融合させたミクスチャーロック。フリーのベースとジョン・フルシアンテのギターが鍵。",
+ ["Anthony Kiedis|ボーカル","Flea|ベース","Chad Smith|ドラム","John Frusciante|ギター"],["Hillel Slovak|ギター（1988年死去）","Josh Klinghoffer|ギター","Dave Navarro|ギター"],[["Rick Rubin","produce","in","多くの作品のプロデュース","artist"]],
+ ["Faith No More|ミクスチャーの同時代","Rage Against the Machine|ファンクとラウド","Parliament|ファンクの源流","Incubus|メロディアスなミクスチャー","King Gnu|ジャンル横断のロック"]);
+B("W","Metallica","アメリカ・ロサンゼルス",1981,"1981–",["metal"],"スラッシュメタルを確立し、メタルを世界的な人気ジャンルにしたバンド。",
+ ["James Hetfield|ボーカル・ギター","Lars Ulrich|ドラム","Kirk Hammett|ギター","Robert Trujillo|ベース"],["Cliff Burton|ベース（1986年死去）","Jason Newsted|ベース","Dave Mustaine|ギター"],[],
+ ["Megadeth|デイヴ・ムステインのバンド","Slayer|スラッシュメタル四天王","Black Sabbath|ヘヴィメタルの源流","Iron Maiden|ツインギターのメタル","X JAPAN|日本のスピードメタル"]);
+B("W","My Bloody Valentine","アイルランド・ダブリン",1983,"1983–",["shoe"],"ケヴィン・シールズの轟音ギターで、シューゲイザーを代表する名盤『Loveless』を生んだ。",
+ ["Kevin Shields|ギター・ボーカル","Bilinda Butcher|ギター・ボーカル","Colm Ó Cíosóig|ドラム","Debbie Googe|ベース"],[],[],
+ ["Slowdive|シューゲイザーの双璧","Ride|UKシューゲイザー","The Jesus and Mary Chain|ノイズポップの源流","スーパーカー|日本のシューゲイザー","Cocteau Twins|夢見心地のサウンド"]);
+B("W","Slowdive","イギリス・レディング",1989,"1989–1995, 2014–",["shoe"],"夢のように柔らかな轟音で知られるシューゲイザーバンド。再結成後に再評価が進んだ。",
+ ["Neil Halstead|ボーカル・ギター","Rachel Goswell|ボーカル・ギター","Christian Savill|ギター","Nick Chaplin|ベース","Simon Scott|ドラム"],[],[],
+ ["My Bloody Valentine|シューゲイザーの双璧","Ride|UKシューゲイザー","Cocteau Twins|夢見心地のボーカル","Beach House|ドリームポップ","フィッシュマンズ|浮遊するサウンド"]);
+B("W","Radiohead","イギリス・オックスフォード",1985,"1985–",["alt","electro"],"ギターロックから電子音へと大胆に変化し続ける。『OK Computer』『Kid A』は時代を代表する名盤。",
+ ["Thom Yorke|ボーカル","Jonny Greenwood|ギター","Colin Greenwood|ベース","Ed O'Brien|ギター","Philip Selway|ドラム"],[],[["Nigel Godrich","produce","in","『OK Computer』以降のプロデュース","artist"]],
+ ["Muse|90年代UKのギターロック","Sigur Rós|壮大で実験的","Portishead|暗い電子音","The Smile|トムとジョニーの別バンド","くるり|変化し続ける姿勢"]);
+B("W","Oasis","イギリス・マンチェスター",1991,"1991–2009, 2024–",["rock"],"ギャラガー兄弟を中心に、90年代ブリットポップを代表するバンド。2025年に再結成ツアーを行った。",
+ ["Liam Gallagher|ボーカル","Noel Gallagher|ギター・ボーカル"],["Tony McCarroll|ドラム"],[],
+ ["Blur|ブリットポップのライバル","The Beatles|最大の影響源","The Stone Roses|マンチェスターの先輩","Arctic Monkeys|英国ギターロックの継承","The Verve|90年代UKロック"]);
+B("W","Blur","イギリス・ロンドン",1988,"1988–",["rock","alt"],"デーモン・アルバーンを中心に、ブリットポップからローファイまで作風を変えてきたバンド。",
+ ["Damon Albarn|ボーカル","Graham Coxon|ギター","Alex James|ベース","Dave Rowntree|ドラム"],[],[["Gorillaz","collab","out","デーモンの別プロジェクト","band"]],
+ ["Oasis|ブリットポップのライバル","Gorillaz|デーモンのもう一つの顔","The Kinks|英国らしいポップ","Pulp|ブリットポップの同時代","Pavement|ローファイの影響"]);
+B("W","Gorillaz","イギリス・ロンドン",1998,"1998–",["electro","pop"],"デーモン・アルバーンとジェイミー・ヒューレットによる架空のアニメバンド。多彩なゲストとの共演が特徴。",
+ ["Damon Albarn|音楽","Jamie Hewlett|アート"],[],[["Blur","collab","out","デーモンの本体バンド","band"]],
+ ["Blur|デーモンのバンド","Daft Punk|ジャンルを越える電子音","Massive Attack|ブリストルの影響","Tame Impala|サイケなポップ","SEKAI NO OWARI|架空の世界観"]);
+B("W","Daft Punk","フランス・パリ",1993,"1993–2021",["electro"],"ロボットの姿で知られるフレンチハウスの代表格。『Get Lucky』などで世界的ヒット。",
+ ["Thomas Bangalter|プロデュース","Guy-Manuel de Homem-Christo|プロデュース"],[],[],
+ ["Justice|フレンチエレクトロ","Kraftwerk|ロボットの系譜","Air|フランスの電子音","Perfume|フィルター越しの電子音","Chemical Brothers|ビッグビート"]);
+B("W","The Strokes","アメリカ・ニューヨーク",1998,"1998–",["rock","alt"],"『Is This It』で00年代のガレージロック・リバイバルの火付け役となったバンド。",
+ ["Julian Casablancas|ボーカル","Nick Valensi|ギター","Albert Hammond Jr.|ギター","Nikolai Fraiture|ベース","Fabrizio Moretti|ドラム"],[],[],
+ ["The Libertines|英国の同時代","Arctic Monkeys|ガレージロックの継承","The White Stripes|ガレージロック・リバイバル","Television|NYパンクの源流","andymori|疾走するギターロック"]);
+B("W","The White Stripes","アメリカ・デトロイト",1997,"1997–2011",["rock","punk"],"ジャック・ホワイトとメグ・ホワイトの2人組。ギターとドラムだけの荒々しいブルースロック。",
+ ["Jack White|ボーカル・ギター","Meg White|ドラム"],[],[],
+ ["The Black Keys|2人組のブルースロック","The Strokes|ガレージロック・リバイバル","Led Zeppelin|ブルースロックの源流","THEE MICHELLE GUN ELEPHANT|ガレージロック","The Stooges|原始的なロック"]);
+B("W","Arctic Monkeys","イギリス・シェフィールド",2002,"2002–",["rock","alt"],"アレックス・ターナーを中心に、SNS時代の先駆けとして登場し、作品ごとに作風を変えてきた。",
+ ["Alex Turner|ボーカル・ギター","Jamie Cook|ギター","Nick O'Malley|ベース","Matt Helders|ドラム"],["Andy Nicholson|ベース"],[],
+ ["The Strokes|最大の影響源","The Last Shadow Puppets|アレックスの別ユニット","Oasis|英国ギターロック","Queens of the Stone Age|重心の低いロック","The Libertines|英国ガレージロック"]);
+B("W","Arcade Fire","カナダ・モントリオール",2001,"2001–",["alt","rock"],"大人数編成の壮大なインディーロック。『Funeral』で一躍注目を集めた。",
+ ["Win Butler|ボーカル・ギター","Régine Chassagne|ボーカル・マルチ楽器","Richard Reed Parry|マルチ楽器","Tim Kingsbury|ベース","Jeremy Gara|ドラム"],["Will Butler|マルチ楽器"],[],
+ ["The National|00年代インディー","Talking Heads|リズムと知性","Bruce Springsteen|高揚するロック","Vampire Weekend|00年代インディー","Sufjan Stevens|壮大なインディーポップ"]);
+B("W","Coldplay","イギリス・ロンドン",1996,"1996–",["pop","rock"],"クリス・マーティンの歌とピアノで、世界最大級のスタジアムバンドに成長した。",
+ ["Chris Martin|ボーカル・ピアノ","Jonny Buckland|ギター","Guy Berryman|ベース","Will Champion|ドラム"],[],[],
+ ["U2|スタジアムロックの先輩","Keane|ピアノ主体のUKロック","Radiohead|初期の影響源","BUMP OF CHICKEN|壮大な歌もの","Snow Patrol|メロディアスなUKロック"]);
+B("W","Muse","イギリス・テインマス",1994,"1994–",["rock","alt"],"マット・ベラミーの超絶技巧と壮大な演出で、クラシックやメタルまで取り込むロック。",
+ ["Matt Bellamy|ボーカル・ギター・ピアノ","Chris Wolstenholme|ベース","Dominic Howard|ドラム"],[],[],
+ ["Radiohead|初期の影響","Queen|劇的なロック","Royal Blood|重いリフの3人組","Placebo|90年代UKロック","ONE OK ROCK|スケールの大きなロック"]);
+B("W","Green Day","アメリカ・カリフォルニア",1987,"1987–",["punk"],"『Dookie』でポップパンクを大ヒットさせ、『American Idiot』でロックオペラにも挑んだ。",
+ ["Billie Joe Armstrong|ボーカル・ギター","Mike Dirnt|ベース","Tré Cool|ドラム"],["John Kiffmeyer|ドラム"],[],
+ ["Ramones|パンクの原点","Blink-182|ポップパンクの同時代","The Offspring|90年代パンク","Hi-STANDARD|日本のメロコア","Weezer|90年代ポップなロック"]);
+B("W","Linkin Park","アメリカ・カリフォルニア",1996,"1996–",["metal","rock"],"ラップとロックを融合させたサウンドで大ヒット。2024年に新ボーカルを迎えて再始動した。",
+ ["Mike Shinoda|ボーカル・ラップ","Dave Farrell|ベース","Joe Hahn|DJ","Emily Armstrong|ボーカル"],["Chester Bennington|ボーカル（2017年死去）","Rob Bourdon|ドラム"],[],
+ ["ONE OK ROCK|ラウドとメロディ","Limp Bizkit|ニューメタル","Deftones|轟音と叙情","Bring Me The Horizon|現代のラウドロック","Papa Roach|ニューメタルの同時代"]);
+B("W","Tame Impala","オーストラリア・パース",2007,"2007–",["psy","electro"],"ケヴィン・パーカーのプロジェクト。録音は基本的に彼一人で行い、ライブはバンド編成。",
+ ["Kevin Parker|ほぼ全パート"],[],[],
+ ["King Gizzard & the Lizard Wizard|オーストラリアのサイケ","MGMT|サイケなポップ","The Beatles|60年代サイケの源流","Pond|メンバーが重なるバンド","サカナクション|ロックとダンス"]);
+B("W","King Gizzard & the Lizard Wizard","オーストラリア・メルボルン",2010,"2010–",["psy","rock","metal"],"驚異的なペースでアルバムを出し続け、ガレージからメタル、微分音まで作品ごとにジャンルを変える。",
+ ["Stu Mackenzie|ボーカル・ギター","Ambrose Kenny-Smith|ボーカル・ハーモニカ","Cook Craig|ギター","Joey Walker|ギター","Lucas Harwood|ベース","Michael Cavanagh|ドラム"],["Eric Moore|ドラム"],[],
+ ["Tame Impala|オーストラリアのサイケ","Thee Oh Sees|ガレージサイケ","Can|反復するグルーヴ","Black Sabbath|ヘヴィなリフ","ゆらゆら帝国|サイケデリックロック"]);
+B("W","Vampire Weekend","アメリカ・ニューヨーク",2006,"2006–",["alt","pop"],"アフリカ音楽の影響を受けた軽やかなギターとエズラ・クーニグの歌で、00年代インディーを代表する。",
+ ["Ezra Koenig|ボーカル・ギター","Chris Baio|ベース","Chris Tomson|ドラム"],["Rostam Batmanglij|マルチ楽器・プロデュース"],[],
+ ["Paul Simon|アフリカ音楽との融合","The Strokes|NYのインディー","Arcade Fire|00年代インディー","cero|多国籍なポップ","Talking Heads|リズムと知性"]);
+B("W","The National","アメリカ・シンシナティ",1999,"1999–",["alt","rock"],"マット・バーニンガーのバリトンと、デスナー兄弟の繊細なアレンジで知られる。",
+ ["Matt Berninger|ボーカル","Aaron Dessner|ギター・ピアノ","Bryce Dessner|ギター","Scott Devendorf|ベース","Bryan Devendorf|ドラム"],[],[],
+ ["Interpol|陰影のあるロック","Arcade Fire|00年代インディー","R.E.M.|大人のオルタナ","Bon Iver|内省的なサウンド","Joy Division|低音のボーカル"]);
+B("W","Sigur Rós","アイスランド・レイキャビク",1994,"1994–",["shoe"],"ヨンシーの弓で弾くギターと造語で歌う声で、氷河のように壮大な音を作るバンド。",
+ ["Jónsi|ボーカル・ギター","Georg Hólm|ベース","Kjartan Sveinsson|キーボード"],["Orri Páll Dýrason|ドラム"],[],
+ ["MONO|壮大なポストロック","Mogwai|ポストロックの盟友","Björk|アイスランドの先輩","Radiohead|実験的な美しさ","Explosions in the Sky|叙情的なインスト"]);
+B("W","Mogwai","イギリス・グラスゴー",1995,"1995–",["shoe"],"静寂から爆発する轟音インストで、ポストロックを代表するスコットランドのバンド。",
+ ["Stuart Braithwaite|ギター","Dominic Aitchison|ベース","Martin Bulloch|ドラム","Barry Burns|ギター・キーボード"],["John Cummings|ギター"],[],
+ ["MONO|轟音ポストロック","Sigur Rós|壮大な音響","Explosions in the Sky|叙情的なインスト","toe|日本のポストロック","Slint|ポストロックの源流"]);
+B("W","ABBA","スウェーデン・ストックホルム",1972,"1972–1982, 2016–",["pop"],"2組の夫婦（当時）によるポップグループ。『Dancing Queen』などの完璧なポップソングで知られる。",
+ ["Agnetha Fältskog|ボーカル","Björn Ulvaeus|ギター・作曲","Benny Andersson|キーボード・作曲","Anni-Frid Lyngstad|ボーカル"],[],[],
+ ["Bee Gees|ディスコ時代のポップ","Fleetwood Mac|男女混成のポップ","Roxette|スウェーデンのポップ","Carpenters|美しいメロディ","Pet Shop Boys|洗練されたポップ"]);
+B("W","Fleetwood Mac","イギリス・ロンドン",1967,"1967–",["rock","pop"],"ブルースバンドから出発し、男女混成のポップロックで『Rumours』を大ヒットさせた。",
+ ["Mick Fleetwood|ドラム","John McVie|ベース","Stevie Nicks|ボーカル"],["Lindsey Buckingham|ギター・ボーカル","Christine McVie|キーボード・ボーカル（2022年死去）","Peter Green|ギター（2020年死去）"],[],
+ ["Eagles|70年代ウエストコースト","ABBA|男女混成のポップ","HAIM|現代の継承者","The Beach Boys|コーラスワーク","Tom Petty and the Heartbreakers|アメリカンロック"]);
+B("W","Talking Heads","アメリカ・ニューヨーク",1975,"1975–1991",["alt","rock"],"デヴィッド・バーンを中心に、ニューウェーブにアフリカのリズムを取り込んだ知的なバンド。",
+ ["David Byrne|ボーカル・ギター","Tina Weymouth|ベース","Chris Frantz|ドラム","Jerry Harrison|キーボード・ギター"],[],[["Brian Eno","produce","in","中期3作のプロデュース","artist"]],
+ ["Television|NYパンクの同時代","Devo|ニューウェーブ","Vampire Weekend|アフリカのリズム","Arcade Fire|知的なインディー","ZAZEN BOYS|ファンク×ニューウェーブ"]);
+B("W","Depeche Mode","イギリス・バジルドン",1980,"1980–",["electro","rock"],"シンセポップから出発し、ダークで官能的なエレクトロニック・ロックを確立した。",
+ ["Dave Gahan|ボーカル","Martin Gore|ギター・キーボード・作曲"],["Andy Fletcher|キーボード（2022年死去）","Vince Clarke|キーボード","Alan Wilder|キーボード"],[],
+ ["New Order|英国シンセポップ","Nine Inch Nails|インダストリアル","Kraftwerk|電子音楽の源流","BUCK-TICK|ダークな電子音","Pet Shop Boys|80年代シンセポップ"]);
+B("W","The Doors","アメリカ・ロサンゼルス",1965,"1965–1973",["psy","rock"],"ジム・モリソンの詩的なカリスマ性とオルガンが印象的なサイケデリック・ロックバンド。",
+ ["Jim Morrison|ボーカル（1971年死去）","Ray Manzarek|キーボード（2013年死去）","Robby Krieger|ギター","John Densmore|ドラム"],[],[],
+ ["The Velvet Underground|60年代の暗いロック","Jefferson Airplane|西海岸サイケ","Pink Floyd|サイケデリック","The Stooges|原始的なロック","Echo & the Bunnymen|ドアーズに影響された80年代"]);
+B("W","Nine Inch Nails","アメリカ・クリーヴランド",1988,"1988–",["electro","metal"],"トレント・レズナーのプロジェクト。インダストリアル・ロックを広め、映画音楽でも評価が高い。",
+ ["Trent Reznor|全パート","Atticus Ross|プロデュース・シンセ"],[],[],
+ ["Depeche Mode|ダークな電子音","Ministry|インダストリアル","Tool|重く複雑なロック","Marilyn Manson|インダストリアル・メタル","DIR EN GREY|痛みを描く表現"]);
+B("W","The Smashing Pumpkins","アメリカ・シカゴ",1988,"1988–2000, 2006–",["alt","shoe"],"ビリー・コーガンを中心に、轟音ギターと美しいメロディを両立させた90年代オルタナの代表格。",
+ ["Billy Corgan|ボーカル・ギター","James Iha|ギター","Jimmy Chamberlin|ドラム"],["D'arcy Wretzky|ベース"],[],
+ ["Nirvana|90年代オルタナ","My Bloody Valentine|轟音ギター","Weezer|90年代USロック","The Cure|耽美なメロディ","Deftones|轟音と叙情"]);
+B("W","Weezer","アメリカ・ロサンゼルス",1992,"1992–",["alt","pop","rock"],"リヴァース・クオモの甘いメロディと分厚いギターで、パワーポップを代表するバンド。",
+ ["Rivers Cuomo|ボーカル・ギター","Brian Bell|ギター","Scott Shriner|ベース","Patrick Wilson|ドラム"],["Matt Sharp|ベース"],[],
+ ["ASIAN KUNG-FU GENERATION|影響を受けた日本のバンド","Pixies|オルタナの源流","Jimmy Eat World|エモ","Cheap Trick|パワーポップの元祖","The Rentals|マット・シャープのバンド"]);
+B("W","Paramore","アメリカ・フランクリン",2004,"2004–",["rock","punk","pop"],"ヘイリー・ウィリアムスのパワフルな歌声で、エモからニューウェーブまで進化してきたバンド。",
+ ["Hayley Williams|ボーカル","Taylor York|ギター","Zac Farro|ドラム"],["Josh Farro|ギター","Jeremy Davis|ベース"],[],
+ ["ONE OK ROCK|エモーショナルなロック","Fall Out Boy|00年代エモ","No Doubt|女性ボーカルのロック","Green Day|ポップパンク","チャットモンチー|女性ボーカルのギターロック"]);
+B("W","BTS","韓国・ソウル",2013,"2013–",["pop"],"7人組の韓国のグループ。世界中で大ヒットを記録し、K-POPを世界的なジャンルに押し上げた。",
+ ["RM|リーダー・ラップ","Jin|ボーカル","SUGA|ラップ","j-hope|ラップ","Jimin|ボーカル","V|ボーカル","Jung Kook|ボーカル"],[],[],
+ ["SEVENTEEN|K-POPの大型グループ","Stray Kids|セルフプロデュース型","BLACKPINK|世界的K-POP","TOMORROW X TOGETHER|同じ事務所の後輩","Mrs. GREEN APPLE|カラフルなポップ"]);
+// ---- Japan indie / alternative ----
+B("J","bloodthirsty butchers","北海道",1986,"1986–2013",["alt","indie"],"吉村秀樹を中心とした札幌出身のバンド。轟音と叙情が同居するサウンドで、多くのバンドに慕われた。",
+ ["吉村秀樹|ボーカル・ギター（2013年死去）","射守矢雄|ベース","小松正宏|ドラム","田渕ひさ子|ギター（2003年〜）"],[],[],
+ ["eastern youth|札幌出身の盟友","NUMBER GIRL|田渕ひさ子の古巣","Dinosaur Jr.|轟音と哀愁","toddle|田渕ひさ子のバンド","fOUL|90年代の日本のオルタナ"]);
+B("J","eastern youth","北海道",1988,"1988–",["alt","punk","indie"],"吉野寿の絶唱と文学的な日本語詞で知られる3ピース。札幌から東京へ拠点を移した。",
+ ["吉野寿|ボーカル・ギター","田森篤哉|ドラム","村岡ゆか|ベース"],["二宮友和|ベース"],[],
+ ["bloodthirsty butchers|札幌の盟友","NUMBER GIRL|90年代の日本のオルタナ","Hüsker Dü|エモーショナルなハードコア","cinema staff|叙情的なギターロック","LOSTAGE|骨太な3ピース"]);
+B("J","toddle","東京",2002,"2002–",["alt","indie"],"田渕ひさ子を中心としたギターロックバンド。繊細さと轟音を行き来する。",
+ ["田渕ひさ子|ボーカル・ギター"],[],[["NUMBER GIRL","collab","out","田渕ひさ子の古巣","band"]],
+ ["bloodthirsty butchers|田渕ひさ子が在籍","NUMBER GIRL|田渕ひさ子の原点","羊文学|女性ボーカルのギターロック","Yo La Tengo|淡々としたノイズ","Hop Along|エモーショナルなインディー"]);
+B("J","downy","東京",2000,"2000–",["alt","shoe","indie"],"映像を伴うライブと、変拍子を多用した緻密で冷たい音像で知られるバンド。",
+ ["青木ロビン|ボーカル・ギター","仲俣和宏|ベース","秋山タカヒコ|ドラム"],["青木裕|ギター（2018年死去）"],[],
+ ["toe|緻密なポストロック","THE NOVEMBERS|耽美なオルタナ","Radiohead|冷たい音像","LITE|変拍子のインスト","People In The Box|複雑な構成"]);
+B("J","LITE","東京",2003,"2003–",["math","shoe","indie"],"変拍子と複雑なギターの絡みで、海外ツアーも多く行うインストゥルメンタル・マスロックバンド。",
+ ["武田信幸|ギター","楠本構造|ギター","井澤惇|ベース","山本晃紀|ドラム"],[],[],
+ ["toe|日本のポストロック","tricot|マスロックの後輩","Battles|変拍子とループ","American Football|マスロック・エモ","downy|緻密なアンサンブル"]);
+B("J","tricot","京都",2010,"2010–",["math","alt","indie"],"変拍子を自在に操るマスロックと、中嶋イッキュウの歌で海外でも人気のバンド。",
+ ["中嶋イッキュウ|ボーカル・ギター","キダ モティフォ|ギター","ヒロミ・ヒロヒロ|ベース","吉田雄介|ドラム"],[],[],
+ ["LITE|日本のマスロック","toe|緻密なアンサンブル","凛として時雨|鋭い展開","Hella|超絶技巧のマスロック","チャットモンチー|ガールズギターロック"]);
+B("J","羊文学","東京",2012,"2012–",["alt","shoe","indie"],"塩塚モエカの澄んだ歌声と轟音ギターで、シューゲイザーの影響を感じさせるバンド。",
+ ["塩塚モエカ|ボーカル・ギター","河西ゆりか|ベース"],[],[],
+ ["きのこ帝国|轟音と叙情","Slowdive|夢見心地の轟音","スーパーカー|日本のシューゲイザー","Alvvays|きらめくギターポップ","toddle|女性ボーカルのギターロック"]);
+B("J","きのこ帝国","東京",2007,"2007–2019",["alt","shoe","indie"],"佐藤千亜妃の歌と轟音ギターで、シューゲイザーから歌ものへと変化したバンド。2019年に活動休止。",
+ ["佐藤千亜妃|ボーカル・ギター","あーちゃん|ギター","谷口滋昭|ベース","西村\"コン\"|ドラム"],[],[],
+ ["羊文学|轟音と澄んだ歌","スーパーカー|日本のシューゲイザー","Slowdive|浮遊する轟音","syrup16g|内省的なロック","Galaxie 500|静かな轟音"]);
+B("J","Yogee New Waves","東京",2013,"2013–",["pop","indie"],"角舘健悟を中心に、都会的で心地よいサウンドで新世代のシティポップを担うバンド。",
+ ["角舘健悟|ボーカル・ギター","竹村郁哉|ギター","上野恒星|ベース","粕谷哲司|ドラム"],[],[],
+ ["never young beach|同世代の東京インディー","cero|東京のポップの系譜","Suchmos|10年代の都会派","シュガー・ベイブ|シティポップの源流","Mac DeMarco|ゆるいギターポップ"]);
+B("J","never young beach","東京",2014,"2014–",["pop","indie"],"安部勇磨を中心に、70年代の日本語ロックを思わせる温かいサウンドのバンド。",
+ ["安部勇磨|ボーカル・ギター"],[],[],
+ ["Yogee New Waves|同世代の東京インディー","はっぴいえんど|日本語ロックの源流","cero|東京の街のポップ","サニーデイ・サービス|ノスタルジックな日本語ロック","Mac DeMarco|ゆるいギターポップ"]);
+B("J","Suchmos","神奈川",2013,"2013–",["pop","indie"],"ブラックミュージックとロックを融合させた、湘南出身のバンド。『STAY TUNE』でブレイク。",
+ ["YONCE|ボーカル","TAIKING|ギター","OK|ドラム","KCEE|DJ","TAIHEI|キーボード"],["HSU|ベース（2021年死去）"],[],
+ ["Yogee New Waves|10年代の都会派","Jamiroquai|アシッドジャズ","D.A.N.|クールなグルーヴ","cero|ブラックミュージック由来のポップ","King Gnu|ミクスチャー"]);
+B("J","D.A.N.","東京",2014,"2014–",["electro","indie"],"ミニマルなダンスミュージックとバンドサウンドを融合させた3ピース。",
+ ["櫻木大悟|ボーカル・ギター・シンセ","市川仁也|ベース","川上輝|ドラム"],[],[],
+ ["サカナクション|ロックとダンス","Suchmos|クールなグルーヴ","The xx|ミニマルなサウンド","Caribou|エレクトロニックとバンド","OGRE YOU ASSHOLE|反復するグルーヴ"]);
+B("J","Base Ball Bear","東京",2001,"2001–",["rock","indie"],"小出祐介を中心に、青春とひねった言葉を描くギターロックバンド。",
+ ["小出祐介|ボーカル・ギター","関根史織|ベース","堀之内大介|ドラム"],["湯浅将平|ギター"],[],
+ ["ASIAN KUNG-FU GENERATION|00年代のギターロック","NUMBER GIRL|影響を受けた先輩","フジファブリック|同時代のバンド","チャットモンチー|00年代のギターロック","The Strokes|ガレージロック"]);
+B("J","the band apart","東京",1998,"1998–",["math","rock","indie"],"高い演奏力と、ジャズやAORを取り込んだ洗練されたギターロックで知られる。",
+ ["荒井岳史|ボーカル・ギター","川崎亘一|ギター","原昌和|ベース","木暮栄一|ドラム"],[],[],
+ ["toe|技巧的なギター","ストレイテナー|同時代のロック","The Police|洗練されたリズム","LITE|インストのアンサンブル","サカナクション|洗練されたグルーヴ"]);
+B("J","ART-SCHOOL","東京",2000,"2000–",["alt","indie"],"木下理樹の痛みを帯びた歌と、オルタナ・シューゲイザーの影響を受けたギターで支持される。",
+ ["木下理樹|ボーカル・ギター","戸高賢史|ギター"],["日向秀和|ベース","大山純|ギター","櫻井雄一|ドラム"],[],
+ ["syrup16g|内省的なオルタナ","ストレイテナー|元メンバーが在籍","The Smashing Pumpkins|轟音と美メロ","Pixies|オルタナの源流","きのこ帝国|轟音と叙情"]);
+B("J","syrup16g","東京",1996,"1996–2008, 2014–",["alt","indie"],"五十嵐隆の自虐的で切実な歌詞で、熱狂的な支持を集めるオルタナティブバンド。",
+ ["五十嵐隆|ボーカル・ギター","中畑大樹|ドラム","キタダマキ|ベース"],[],[],
+ ["ART-SCHOOL|内省的なオルタナ","People In The Box|独自の言葉","Radiohead|内省的なロック","きのこ帝国|暗い叙情","THE NOVEMBERS|耽美なオルタナ"]);
+B("J","People In The Box","東京",2001,"2001–",["alt","math","indie"],"波多野裕文の不思議な詞世界と、複雑な曲構成で知られる3ピース。",
+ ["波多野裕文|ボーカル・ギター","福井健太|ベース","山口大吾|ドラム"],[],[],
+ ["syrup16g|独自の言葉","downy|複雑な構成","LITE|変拍子","Radiohead|実験的な歌もの","cinema staff|叙情的なギターロック"]);
+B("J","THE NOVEMBERS","東京",2005,"2005–",["alt","shoe","indie"],"小林祐介を中心に、耽美な轟音からインダストリアルまで変化を続けるバンド。",
+ ["小林祐介|ボーカル・ギター","ケンゴマツモト|ギター","高松浩史|ベース","吉木諒祐|ドラム"],[],[],
+ ["downy|冷たい音像","My Bloody Valentine|轟音","The Cure|耽美なサウンド","syrup16g|内省的なオルタナ","BUCK-TICK|ダークな美意識"]);
+B("J","cinema staff","岐阜",2003,"2003–",["alt","indie"],"叙情的なメロディと鋭いギターで知られる岐阜出身のバンド。",
+ ["飯田瑞規|ボーカル・ギター","辻友貴|ギター","三島想平|ベース","久野洋平|ドラム"],[],[],
+ ["People In The Box|複雑な展開","eastern youth|エモーショナルな日本語ロック","凛として時雨|鋭いギター","9mm Parabellum Bullet|激しいギターロック","ストレイテナー|00年代のロック"]);
+B("J","LOSTAGE","奈良",2001,"2001–",["alt","punk","indie"],"奈良を拠点に、自主レーベルと自身のレコード店を運営しながら活動する骨太な3ピース。",
+ ["五味岳久|ボーカル・ベース","五味拓人|ギター","岩城智和|ドラム"],[],[],
+ ["eastern youth|骨太な3ピース","Fugazi|DIYの精神","bloodthirsty butchers|轟音の叙情","NUMBER GIRL|日本のオルタナ","Hüsker Dü|エモーショナルなハードコア"]);
+B("J","OGRE YOU ASSHOLE","長野",2001,"2001–",["psy","indie"],"反復するグルーヴとサイケデリックなサウンドで、独自の道を進む長野出身のバンド。",
+ ["出戸学|ボーカル・ギター","馬渕啓|ギター","勝浦隆嗣|ドラム","清水隆史|ベース"],[],[],
+ ["ゆらゆら帝国|日本のサイケ","Can|クラウトロックの反復","D.A.N.|反復するグルーヴ","Deerhunter|サイケなインディー","踊ってばかりの国|サイケなロック"]);
+B("J","踊ってばかりの国","東京",2008,"2008–",["psy","indie"],"下津光史を中心に、サイケデリックでどこか懐かしいロックを鳴らすバンド。",
+ ["下津光史|ボーカル・ギター"],[],[],
+ ["OGRE YOU ASSHOLE|サイケなロック","ゆらゆら帝国|日本のサイケ","never young beach|温かいギターロック","The Velvet Underground|退廃的なロック","andymori|まっすぐなギターロック"]);
+B("J","赤い公園","東京",2010,"2010–2021",["alt","pop","indie"],"津野米咲の作曲を中心に、奇抜さとポップさを併せ持ったガールズバンド。",
+ ["石野理子|ボーカル","藤本ひかり|ベース","歌川菜穂|ドラム"],["津野米咲|ギター・作曲（2020年死去）","佐藤千明|ボーカル"],[],
+ ["チャットモンチー|ガールズギターロック","tricot|個性的なガールズバンド","相対性理論|ひねりのあるポップ","SHISHAMO|ガールズバンド","羊文学|女性ボーカルのオルタナ"]);
+B("J","SHISHAMO","神奈川",2010,"2010–",["rock","pop","indie"],"宮崎朝子の作詞作曲で、等身大の恋愛を描くスリーピースのガールズバンド。",
+ ["宮崎朝子|ボーカル・ギター","松岡彩|ベース","吉川美冴貴|ドラム"],[],[],
+ ["チャットモンチー|ガールズギターロック","赤い公園|ガールズバンド","back number|恋愛のロック","Base Ball Bear|青春のギターロック","Mrs. GREEN APPLE|明るいポップロック"]);
+B("J","フジファブリック","東京",2000,"2000–",["rock","alt","indie"],"志村正彦のひねりのある作曲で注目されたバンド。志村の死後も3人で活動を続けた。",
+ ["山内総一郎|ボーカル・ギター","金澤ダイスケ|キーボード","加藤慎一|ベース"],["志村正彦|ボーカル・ギター（2009年死去）"],[],
+ ["くるり|ひねりのあるロック","スピッツ|歌心","Base Ball Bear|同時代のバンド","XTC|ひねくれポップ","andymori|詩的なロック"]);
+B("J","Galileo Galilei","北海道",2007,"2007–2016, 2022–",["pop","indie"],"北海道稚内出身。海外インディーの影響を受けた繊細なポップを鳴らすバンド。",
+ ["尾崎雄貴|ボーカル・ギター","尾崎和樹|ドラム","岩井郁人|ギター"],[],[],
+ ["Death Cab for Cutie|繊細なインディーポップ","Vampire Weekend|00年代インディー","BUMP OF CHICKEN|歌ものロック","Two Door Cinema Club|ダンサブルなインディー","スピッツ|透明な歌声"]);
+B("J","ギターウルフ","東京",1987,"1987–",["punk","indie"],"セイジ率いる爆音ロックンロールバンド。海外のガレージパンクシーンでも高い人気を持つ。",
+ ["セイジ|ボーカル・ギター"],["ビリー|ベース（2005年死去）","トオル|ドラム"],[],
+ ["ザ・クロマニヨンズ|ロックンロール","Ramones|パンクの原点","Teengenerate|日本のガレージパンク","The Cramps|サイコビリー","少年ナイフ|海外で人気の日本のバンド"]);
+B("J","少年ナイフ","大阪",1981,"1981–",["punk","pop","indie"],"大阪出身のガールズパンクバンド。Nirvanaのカート・コバーンも愛したことで知られる。",
+ ["なおこ|ボーカル・ギター"],[],[],
+ ["Ramones|ポップなパンク","ギターウルフ|海外で人気の日本のバンド","The Shaggs|手作り感のあるロック","MELT-BANANA|海外で人気の日本のバンド","Nirvana|少年ナイフを愛したバンド"]);
+B("J","Boris","東京",1992,"1992–",["metal","shoe","indie"],"ドローン、メタル、シューゲイザーまで横断する3人組。海外での評価が非常に高い。",
+ ["Takeshi|ベース・ギター・ボーカル","Wata|ギター・ボーカル","Atsuo|ドラム・ボーカル"],[],[],
+ ["MONO|海外で評価される日本のバンド","Sunn O)))|ドローンメタル","Melvins|ヘヴィなスラッジ","My Bloody Valentine|轟音","Boredoms|日本のアンダーグラウンド"]);
+B("J","MELT-BANANA","東京",1992,"1992–",["punk","indie"],"超高速のノイズグラインドと奇妙なポップさで、世界中をツアーするバンド。",
+ ["ヤスコ|ボーカル","アガタ|ギター"],[],[],
+ ["Boredoms|日本のアンダーグラウンド","Lightning Bolt|ノイズロック","Boris|海外で人気の日本のバンド","Deerhoof|奇妙なポップ","ギターウルフ|爆音ロック"]);
+B("J","神聖かまってちゃん","千葉",2008,"2008–",["alt","indie"],"の子を中心に、ネット配信から注目を集めたバンド。むき出しの感情と美しいメロディが特徴。",
+ ["の子|ボーカル・ギター"],[],[],
+ ["銀杏BOYZ|むき出しの感情","syrup16g|切実な歌詞","andymori|まっすぐなギターロック","相対性理論|ネット時代のバンド","踊ってばかりの国|10年代インディー"]);
+
+// ---- Overseas indie / alternative ----
+B("W","Pavement","アメリカ・ストックトン",1989,"1989–1999, 2010, 2022–",["alt","indie"],"スティーヴン・マルクマスのゆるい歌とローファイな音で、90年代インディーを象徴するバンド。",
+ ["Stephen Malkmus|ボーカル・ギター","Scott Kannberg|ギター","Mark Ibold|ベース","Bob Nastanovich|パーカッション","Steve West|ドラム"],["Gary Young|ドラム（2023年死去）"],[],
+ ["Built to Spill|90年代USインディー","Sonic Youth|ノイズとアート","Blur|ローファイの影響","Silver Jews|メンバーが重なるバンド","Car Seat Headrest|ローファイの継承"]);
+B("W","Dinosaur Jr.","アメリカ・アマースト",1984,"1984–1997, 2005–",["alt","indie"],"J・マスキスの轟音ギターソロとけだるい歌で、オルタナティブの原点の一つとなった。",
+ ["J Mascis|ボーカル・ギター","Lou Barlow|ベース","Murph|ドラム"],[],[],
+ ["Sonic Youth|USオルタナ","Neil Young|轟音ギターの源流","bloodthirsty butchers|轟音と哀愁","Sebadoh|ルー・バーロウのバンド","Pixies|80年代オルタナ"]);
+B("W","Built to Spill","アメリカ・ボイシ",1992,"1992–",["alt","indie"],"ダグ・マーシュを中心に、長く絡み合うギターと切ないメロディで知られる。",
+ ["Doug Martsch|ボーカル・ギター"],[],[],
+ ["Pavement|90年代USインディー","Modest Mouse|北西部のインディー","Dinosaur Jr.|ギターソロ","Neil Young|長尺のギター","Death Cab for Cutie|切ないインディー"]);
+B("W","Modest Mouse","アメリカ・イサクア",1992,"1992–",["alt","indie"],"アイザック・ブロックのひねくれた歌とギターで、インディーから大ヒットまで届いたバンド。",
+ ["Isaac Brock|ボーカル・ギター"],[],[],
+ ["Built to Spill|北西部のインディー","Pixies|ひねくれたオルタナ","The Shins|00年代インディー","Talking Heads|奇妙なリズム","Pavement|90年代インディー"]);
+B("W","Neutral Milk Hotel","アメリカ・ルストン",1989,"1989–1998, 2013–2015",["folk","indie"],"ジェフ・マンガムの叫ぶような歌と管楽器で、名盤『In the Aeroplane Over the Sea』を残した。",
+ ["Jeff Mangum|ボーカル・ギター","Julian Koster|ベース・ノコギリ","Scott Spillane|管楽器","Jeremy Barnes|ドラム"],[],[],
+ ["The Microphones|ローファイ・フォーク","Arcade Fire|壮大なインディー","Bright Eyes|叫ぶフォーク","Beirut|管楽器のインディー","Sufjan Stevens|物語のあるフォーク"]);
+B("W","Yo La Tengo","アメリカ・ホーボーケン",1984,"1984–",["alt","indie","shoe"],"アイラ・カプランとジョージア・ハブリー夫妻を中心に、静かな歌からノイズまで奏でる。",
+ ["Ira Kaplan|ボーカル・ギター","Georgia Hubley|ドラム・ボーカル","James McNew|ベース"],[],[],
+ ["The Velvet Underground|ミニマルなロック","Galaxie 500|静かな轟音","Low|スロウコア","Sonic Youth|ノイズギター","toddle|淡々としたノイズ"]);
+B("W","Slint","アメリカ・ルイビル",1986,"1986–1992",["shoe","math","indie"],"名盤『Spiderland』で、ポストロックとマスロックの原点とされるバンド。",
+ ["Brian McMahan|ギター・ボーカル","David Pajo|ギター","Britt Walford|ドラム","Todd Brashear|ベース"],[],[],
+ ["Mogwai|ポストロックの継承","Godspeed You! Black Emperor|長尺のインスト","American Football|マスロック","toe|日本のポストロック","Black Country, New Road|現代のポストロック"]);
+B("W","Godspeed You! Black Emperor","カナダ・モントリオール",1994,"1994–2003, 2010–",["shoe","indie"],"大人数編成で、20分を超える壮大なインストゥルメンタルを奏でるポストロック集団。",
+ ["Efrim Menuck|ギター"],[],[],
+ ["Mogwai|轟音ポストロック","MONO|壮大なインスト","Sigur Rós|壮大な音響","Explosions in the Sky|叙情的なインスト","Slint|ポストロックの源流"]);
+B("W","Explosions in the Sky","アメリカ・オースティン",1999,"1999–",["shoe","indie"],"叙情的なギターが少しずつ高まっていく、テキサス出身のインスト・ポストロックバンド。",
+ ["Munaf Rayani|ギター","Mark Smith|ギター","Michael James|ベース・ギター","Chris Hrasky|ドラム"],[],[],
+ ["Mogwai|轟音ポストロック","MONO|叙情的なインスト","Sigur Rós|壮大な音","toe|繊細なギター","Godspeed You! Black Emperor|長尺のインスト"]);
+B("W","Cocteau Twins","スコットランド・グランジマウス",1979,"1979–1997",["shoe","indie"],"エリザベス・フレイザーの言葉にならない歌声と残響ギターで、ドリームポップの原型を作った。",
+ ["Elizabeth Fraser|ボーカル","Robin Guthrie|ギター","Simon Raymonde|ベース"],[],[],
+ ["Slowdive|夢見心地の轟音","Beach House|ドリームポップ","My Bloody Valentine|シューゲイザー","相対性理論|浮遊するボーカル","This Mortal Coil|同じレーベルの4AD"]);
+B("W","Ride","イギリス・オックスフォード",1988,"1988–1996, 2014–",["shoe","indie"],"轟音ギターと美しいハーモニーで、初期シューゲイザーを代表するバンド。",
+ ["Mark Gardener|ボーカル・ギター","Andy Bell|ボーカル・ギター","Steve Queralt|ベース","Loz Colbert|ドラム"],[],[],
+ ["Slowdive|シューゲイザーの同期","My Bloody Valentine|轟音ギター","The Jesus and Mary Chain|ノイズポップ","スーパーカー|日本のシューゲイザー","Oasis|アンディ・ベルが在籍"]);
+B("W","The Jesus and Mary Chain","スコットランド・イースト・キルブライド",1983,"1983–1999, 2007–",["shoe","alt","indie"],"リード兄弟による、甘いメロディをノイズで包んだサウンドでシューゲイザーの源流となった。",
+ ["Jim Reid|ボーカル","William Reid|ギター"],["Bobby Gillespie|ドラム"],[],
+ ["My Bloody Valentine|ノイズポップの継承","The Velvet Underground|ノイズとメロディ","Primal Scream|ボビー・ギレスピーのバンド","Ride|シューゲイザー","The Ronettes|甘いメロディの源流"]);
+B("W","Stereolab","イギリス・ロンドン",1990,"1990–2009, 2019–",["indie","electro","psy"],"レトロなオルガンとクラウトロックの反復、ラティシア・サドゥエールの歌が特徴。",
+ ["Tim Gane|ギター・キーボード","Lætitia Sadier|ボーカル"],["Mary Hansen|ボーカル（2002年死去）"],[],
+ ["相対性理論|レトロフューチャーなポップ","Broadcast|60年代風の電子音","Can|反復するグルーヴ","cero|洗練されたポップ","Yo La Tengo|インディーの同時代"]);
+B("W","Belle and Sebastian","スコットランド・グラスゴー",1996,"1996–",["pop","folk","indie"],"スチュアート・マードックの文学的な歌詞と、繊細なチェンバーポップで知られる。",
+ ["Stuart Murdoch|ボーカル・ギター","Stevie Jackson|ギター","Sarah Martin|バイオリン"],["Isobel Campbell|チェロ・ボーカル","Stuart David|ベース"],[],
+ ["The Smiths|文学的なポップ","Camera Obscura|グラスゴーのポップ","Nick Drake|繊細なフォーク","フリッパーズ・ギター|ネオアコ","Vampire Weekend|知的なインディー"]);
+B("W","Beach House","アメリカ・ボルチモア",2004,"2004–",["shoe","pop","indie"],"ヴィクトリア・ルグランの歌とオルガンで、夢見るようなドリームポップを奏でる2人組。",
+ ["Victoria Legrand|ボーカル・キーボード","Alex Scally|ギター"],[],[],
+ ["Cocteau Twins|ドリームポップの源流","Slowdive|夢見心地の轟音","Grizzly Bear|00年代インディー","Mazzy Star|けだるい歌","Alvvays|きらめくインディーポップ"]);
+B("W","Animal Collective","アメリカ・ボルチモア",2003,"2003–",["psy","electro","indie"],"実験的な音響とビーチボーイズ的なハーモニーを融合させた、00年代サイケポップの代表格。",
+ ["Avey Tare|ボーカル・ギター","Panda Bear|ボーカル・ドラム","Geologist|エレクトロニクス","Deakin|ギター"],[],[],
+ ["The Beach Boys|ハーモニーの手本","Deerhunter|サイケなインディー","Grizzly Bear|ブルックリンの同時代","Tame Impala|サイケなポップ","Panda Bear|メンバーのソロ"]);
+B("W","Deerhunter","アメリカ・アトランタ",2001,"2001–",["psy","shoe","indie"],"ブラッドフォード・コックスを中心に、ノイズとサイケと甘いポップを行き来するバンド。",
+ ["Bradford Cox|ボーカル・ギター","Lockett Pundt|ギター・ボーカル","Moses Archuleta|ドラム"],[],[],
+ ["Animal Collective|サイケなインディー","My Bloody Valentine|轟音","Atlas Sound|ブラッドフォードのソロ","OGRE YOU ASSHOLE|サイケなバンド","Real Estate|きらめくギター"]);
+B("W","The Shins","アメリカ・アルバカーキ",1996,"1996–",["pop","indie"],"ジェームス・マーサーの甘いメロディで、00年代インディーポップを代表するバンド。",
+ ["James Mercer|ボーカル・ギター"],[],[],
+ ["Death Cab for Cutie|00年代インディー","Modest Mouse|USインディー","The Beach Boys|甘いメロディ","Broken Bells|マーサーの別ユニット","Belle and Sebastian|繊細なポップ"]);
+B("W","Death Cab for Cutie","アメリカ・ベリンガム",1997,"1997–",["alt","pop","indie"],"ベン・ギバードの繊細な歌と内省的な歌詞で、00年代インディーを代表するバンド。",
+ ["Ben Gibbard|ボーカル・ギター","Nick Harmer|ベース"],["Chris Walla|ギター・プロデュース"],[],
+ ["The Postal Service|ギバードの別ユニット","The Shins|00年代インディー","Built to Spill|北西部のインディー","Galileo Galilei|繊細なインディーポップ","American Football|切ないエモ"]);
+B("W","American Football","アメリカ・アーバナ",1997,"1997–2000, 2014–",["math","indie"],"変則チューニングの繊細なギターとトランペットで、エモとマスロックの名盤を残した。",
+ ["Mike Kinsella|ボーカル・ギター","Steve Holmes|ギター","Steve Lamos|ドラム・トランペット"],[],[],
+ ["toe|繊細なギター","Cap'n Jazz|キンセラ兄弟の原点","Owen|マイク・キンセラのソロ","Slint|マスロックの源流","LITE|日本のマスロック"]);
+B("W","Big Thief","アメリカ・ブルックリン",2015,"2015–",["folk","indie"],"エイドリアン・レンカーの親密な歌と、フォークからノイズまで行き来する演奏で評価が高い。",
+ ["Adrianne Lenker|ボーカル・ギター","Buck Meek|ギター","James Krivchenia|ドラム"],["Max Oleartchik|ベース"],[],
+ ["Neil Young|フォークとノイズ","Alvvays|10年代インディー","Wilco|オルタナ・カントリー","Fleet Foxes|現代のフォーク","Low|静かな強さ"]);
+B("W","Alvvays","カナダ・トロント",2011,"2011–",["pop","shoe","indie"],"モリー・ランキンの歌と、きらめくギターのジャングルポップで人気のバンド。",
+ ["Molly Rankin|ボーカル・ギター","Alec O'Hanley|ギター"],[],[],
+ ["Beach House|ドリームポップ","Teenage Fanclub|ギターポップ","羊文学|轟音と澄んだ歌","Slowdive|夢見心地のギター","Belle and Sebastian|インディーポップ"]);
+B("W","Fontaines D.C.","アイルランド・ダブリン",2017,"2017–",["punk","alt","indie"],"グリアン・チャッテンの詩的な歌を軸に、ポストパンクから大きく羽ばたいたダブリンのバンド。",
+ ["Grian Chatten|ボーカル","Carlos O'Connell|ギター","Conor Curley|ギター","Conor Deegan III|ベース","Tom Coll|ドラム"],[],[],
+ ["IDLES|現代のポストパンク","Joy Division|ポストパンクの源流","The Smiths|詩的なボーカル","black midi|英国の新世代","The Pogues|アイルランドの先輩"]);
+B("W","black midi","イギリス・ロンドン",2017,"2017–2024",["math","alt","indie"],"超絶技巧と予測不能な展開で、英国ロックの新世代を象徴したバンド。2024年に活動を終えた。",
+ ["Geordie Greep|ボーカル・ギター","Cameron Picton|ベース・ボーカル","Morgan Simpson|ドラム"],["Matt Kwasniewski-Kelvin|ギター"],[],
+ ["Black Country, New Road|同じ界隈の新世代","King Crimson|変拍子と技巧","Slint|緊張感","tricot|変拍子","Squid|英国ポストパンク"]);
+B("W","Black Country, New Road","イギリス・ケンブリッジ",2018,"2018–",["alt","shoe","indie"],"室内楽的な大編成で、ポストロックとフォークを融合させるバンド。ボーカルの脱退後も活動を続ける。",
+ ["Tyler Hyde|ベース・ボーカル","Lewis Evans|サックス・ボーカル","May Kershaw|キーボード・ボーカル","Georgia Ellery|バイオリン","Charlie Wayne|ドラム","Luke Mark|ギター"],["Isaac Wood|ボーカル・ギター"],[],
+ ["black midi|同じ界隈の新世代","Slint|ポストロックの源流","Arcade Fire|大編成のインディー","Godspeed You! Black Emperor|壮大な展開","Big Thief|親密なフォーク"]);
+B("W","Fugazi","アメリカ・ワシントンD.C.",1987,"1987–2003",["punk","indie"],"イアン・マッケイらによる、DIY精神と緊張感あふれる演奏で知られるポストハードコアの代表格。",
+ ["Ian MacKaye|ボーカル・ギター","Guy Picciotto|ボーカル・ギター","Joe Lally|ベース","Brendan Canty|ドラム"],[],[],
+ ["Minor Threat|イアン・マッケイの前身","At the Drive-In|ポストハードコア","LOSTAGE|DIYの精神","Sonic Youth|USアンダーグラウンド","Hüsker Dü|80年代ハードコア"]);
+B("W","Television","アメリカ・ニューヨーク",1973,"1973–1978, 1992–",["punk","alt"],"トム・ヴァーレインとリチャード・ロイドの絡み合うギターで、NYパンクに詩情を持ち込んだ。",
+ ["Richard Lloyd|ギター","Fred Smith|ベース","Billy Ficca|ドラム"],["Tom Verlaine|ボーカル・ギター（2023年死去）","Richard Hell|ベース"],[],
+ ["The Velvet Underground|NYの先輩","Talking Heads|NYパンクの同時代","The Strokes|NYの継承者","Patti Smith|CBGBの同時代","Ramones|NYパンク"]);
+B("W","The Stone Roses","イギリス・マンチェスター",1983,"1983–1996, 2011–2017",["rock","psy","indie"],"60年代サイケとダンスビートを融合させ、マッドチェスター・ムーブメントの中心となった。",
+ ["Ian Brown|ボーカル","John Squire|ギター","Mani|ベース","Reni|ドラム"],[],[],
+ ["Oasis|マンチェスターの後継","Happy Mondays|マッドチェスター","The Smiths|マンチェスターの先輩","Primal Scream|ダンスとロック","The Byrds|60年代のきらめき"]);
+B("W","Interpol","アメリカ・ニューヨーク",1997,"1997–",["alt","indie"],"ポール・バンクスの低い声と冷たいギターで、00年代ポストパンク・リバイバルを代表する。",
+ ["Paul Banks|ボーカル・ギター","Daniel Kessler|ギター","Sam Fogarino|ドラム"],["Carlos Dengler|ベース"],[],
+ ["Joy Division|ポストパンクの源流","The National|陰影のあるロック","The Strokes|NYの同時代","Editors|英国のポストパンク","The Cure|陰影のあるギター"]);
+B("W","The Libertines","イギリス・ロンドン",1997,"1997–2004, 2010, 2014–",["rock","punk","indie"],"ピート・ドハーティとカール・バラーの2人を軸にした、荒々しくロマンチックな英国ロック。",
+ ["Pete Doherty|ボーカル・ギター","Carl Barât|ボーカル・ギター","John Hassall|ベース","Gary Powell|ドラム"],[],[],
+ ["The Strokes|ガレージロック・リバイバル","Arctic Monkeys|英国ギターロック","The Clash|英国パンク","andymori|疾走するギターロック","Babyshambles|ピートの別バンド"]);
+B("W","Car Seat Headrest","アメリカ・リーズバーグ",2010,"2010–",["alt","indie"],"ウィル・トレドの宅録から始まったプロジェクト。長尺で文学的なインディーロック。",
+ ["Will Toledo|ボーカル・ギター"],[],[],
+ ["Pavement|ローファイの源流","Modest Mouse|ひねくれたインディー","Neutral Milk Hotel|宅録の情熱","The Strokes|ガレージロック","Big Thief|10年代インディー"]);
+B("W","Wilco","アメリカ・シカゴ",1994,"1994–",["alt","folk","indie"],"ジェフ・トゥイーディを中心に、オルタナ・カントリーから実験的なロックへと変化してきた。",
+ ["Jeff Tweedy|ボーカル・ギター","John Stirratt|ベース","Nels Cline|ギター","Glenn Kotche|ドラム","Pat Sansone|マルチ楽器","Mikael Jorgensen|キーボード"],[],[],
+ ["Big Thief|現代のフォークロック","Neil Young|オルタナ・カントリー","Radiohead|実験的な歌もの","The National|大人のインディー","Uncle Tupelo|トゥイーディの前身"]);
+B("W","Galaxie 500","アメリカ・ボストン",1987,"1987–1991",["shoe","indie"],"ゆったりとしたテンポと残響のギターで、スロウコア・ドリームポップの先駆けとなった3人組。",
+ ["Dean Wareham|ボーカル・ギター","Naomi Yang|ベース","Damon Krukowski|ドラム"],[],[],
+ ["Low|スロウコア","Yo La Tengo|静かな轟音","The Velvet Underground|ミニマルなロック","Luna|ディーンの次のバンド","きのこ帝国|静かな轟音"]);
+B("W","Low","アメリカ・ダルース",1993,"1993–2022",["shoe","indie"],"アラン・スパーホークとミミ・パーカー夫妻のハーモニーで、スロウコアを代表するバンド。",
+ ["Alan Sparhawk|ボーカル・ギター"],["Mimi Parker|ドラム・ボーカル（2022年死去）"],[],
+ ["Galaxie 500|スロウコア","Yo La Tengo|夫婦のバンド","Big Thief|静かな強さ","Red House Painters|スロウコア","Sigur Rós|静寂の美しさ"]);
+B("W","Khruangbin","アメリカ・ヒューストン",2010,"2010–",["psy","indie"],"タイのファンクや中東音楽の影響を受けた、心地よいサイケデリックなインストゥルメンタル3人組。",
+ ["Laura Lee|ベース","Mark Speer|ギター","Donald \"DJ\" Johnson|ドラム"],[],[],
+ ["Tame Impala|サイケなグルーヴ","Unknown Mortal Orchestra|サイケなソウル","Suchmos|心地よいグルーヴ","Bonobo|メロウなサウンド","cero|多国籍なポップ"]);
+B("W","Unknown Mortal Orchestra","ニュージーランド→アメリカ・ポートランド",2010,"2010–",["psy","indie"],"ルーバン・ニールソンを中心に、ローファイなサイケとソウルを融合させたバンド。",
+ ["Ruban Nielson|ボーカル・ギター"],[],[],
+ ["Tame Impala|サイケなポップ","Khruangbin|サイケなグルーヴ","Mac DeMarco|ゆるいインディー","The Beatles|60年代サイケ","Sly and the Family Stone|ファンクの源流"]);
+B("W","IDLES","イギリス・ブリストル",2009,"2009–",["punk","indie"],"ジョー・タルボットの叫びと社会的なメッセージで、現代英国ポストパンクを代表するバンド。",
+ ["Joe Talbot|ボーカル"],[],[],
+ ["Fontaines D.C.|現代のポストパンク","The Clash|政治的なパンク","Shame|英国の新世代","Fugazi|緊張感のある演奏","Sleaford Mods|英国の怒り"]);
+B("W","Turnstile","アメリカ・ボルチモア",2010,"2010–",["punk","indie"],"ハードコアにサイケやポップを取り込み、ジャンルの枠を広げたバンド。",
+ ["Brendan Yates|ボーカル"],[],[],
+ ["Fugazi|ポストハードコア","Bad Brains|ハードコアの源流","IDLES|現代のパンク","Deftones|轟音と叙情","Paramore|エネルギッシュなロック"]);
+
+["NUMBER GIRL","ZAZEN BOYS","toe","MONO","ゆらゆら帝国","フィッシュマンズ","cero","相対性理論","andymori","凛として時雨","銀杏BOYZ","GOING STEADY","MONGOL800","Hi-STANDARD","My Bloody Valentine","Slowdive","Pixies","Sonic Youth","Arcade Fire","The National","Vampire Weekend","King Gizzard & the Lizard Wizard","Tame Impala","Mogwai","Sigur Rós","The Velvet Underground","The Smiths","Joy Division","スーパーカー","サニーデイ・サービス","くるり"].forEach(n => { const b = LIBIDX[norm(n)]; if (b && !b.genres.includes("indie")) b.genres.push("indie"); });
+["toe","ZAZEN BOYS","凛として時雨","ELLEGARDEN"].forEach(n => { const b = LIBIDX[norm(n)]; if (b && !b.genres.includes("math")) b.genres.push("math"); });
+
+/* ---------- my registered bands ---------- */
+const KEY_MINE = "band-lookup-mine-v1";
+let mine = readJSON(KEY_MINE, []);
+let MINEIDX = {};
+const splitLine = s => { const m = String(s).match(/^(.*?)\s*[\/／|]\s*(.*)$/); return m ? [m[1].trim(), m[2].trim()] : [String(s).trim(), ""]; };
+const lines = t => String(t || "").split(/\n/).map(x => x.trim()).filter(Boolean);
+function mineRec(m) {
+  const related = [
+    ...(m.members || []).map(l => { const [n, p] = splitLine(l); return { name: n, kind: "artist", type: "member", direction: "out", years: "", note: p }; }),
+    ...(m.former || []).map(l => { const [n, p] = splitLine(l); return { name: n, kind: "artist", type: "former", direction: "out", years: "", note: p }; }),
+  ].filter(r => r.name);
+  return { name: m.name, kind: "band", origin: m.origin || "", years: m.years || "", note: m.note || "", related,
+    similar: (m.similar || []).map(l => { const [n, r] = splitLine(l); return { name: n, kind: "band", reason: r }; }).filter(x => x.name),
+    region: m.region || "J", year: +m.year || 0, genres: m.genres || [], mine: true };
+}
+function rebuildMine() { MINEIDX = {}; mine.forEach(m => { MINEIDX[norm(m.name)] = mineRec(m); }); }
+function saveMine() { writeJSON(KEY_MINE, mine); rebuildMine(); }
+const allLib = () => [...Object.values(MINEIDX), ...LIB.filter(b => !MINEIDX[norm(b.name)])];
+rebuildMine();
+
+function openEditor(name = null, prefill = "") {
+  if (ctl) ctl.abort();
+  state = { view: "edit", editing: name, prefill, confirmDelete: false };
+  render(); window.scrollTo({ top: 0 });
+}
+
+function viewEdit() {
+  const m = state.editing ? mine.find(x => norm(x.name) === norm(state.editing)) : null;
+  const base = m || (state.prefill ? { name: state.prefill } : {});
+  const g = new Set(base.genres || []);
+  return `${topbar()}<section class="view">
+    <div class="editor-head">
+      <p class="kicker">${m ? "Edit Your Entry" : "Add Your Band"}</p>
+      <h1><span class="misreg" data-text="${m ? "登録を編集" : "バンドを登録"}">${m ? "登録を編集" : "バンドを登録"}</span></h1>
+      <p class="fine">地元のバンドや友達のバンドなど、収録されていないバンドを登録できます。登録した内容はこのブラウザにだけ保存され、検索や「ジャンル・年代から探す」にも出るようになります。</p>
+    </div>
+    <form class="editor" id="ed">
+      <div class="f-row">
+        <label class="field wide"><span>バンド名 <em>必須</em></span><input id="e-name" required value="${esc(base.name || "")}" placeholder="例: 〇〇〇〇"></label>
+      </div>
+      <div class="f-row">
+        <fieldset class="field"><legend>地域</legend>
+          <div class="seg">
+            <label><input type="radio" name="e-region" id="e-r-j" value="J" ${base.region !== "W" ? "checked" : ""}><span>日本</span></label>
+            <label><input type="radio" name="e-region" id="e-r-w" value="W" ${base.region === "W" ? "checked" : ""}><span>海外</span></label>
+          </div></fieldset>
+        <label class="field"><span>結成年</span><input id="e-year" type="number" inputmode="numeric" min="1900" max="2100" value="${esc(base.year || "")}" placeholder="2015"></label>
+        <label class="field"><span>活動期間</span><input id="e-years" value="${esc(base.years || "")}" placeholder="2015–"></label>
+        <label class="field"><span>出身地</span><input id="e-origin" value="${esc(base.origin || "")}" placeholder="大阪"></label>
+      </div>
+      <fieldset class="field wide"><legend>ジャンル（いくつでも）</legend>
+        <div class="gpick">${Object.entries(GENRES).map(([k, l]) => `<label><input type="checkbox" id="e-g-${k}" value="${k}" ${g.has(k) ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
+      </fieldset>
+      <label class="field wide"><span>紹介</span><textarea id="e-note" rows="3" placeholder="どんなバンドか、ひとことで">${esc(base.note || "")}</textarea></label>
+      <div class="f-row cols">
+        <label class="field"><span>メンバー（1行に1人）</span><textarea id="e-members" rows="5" placeholder="山田太郎 / ボーカル・ギター&#10;鈴木花子 / ベース">${esc((base.members || []).join("\n"))}</textarea></label>
+        <label class="field"><span>元メンバー（1行に1人）</span><textarea id="e-former" rows="5" placeholder="佐藤一郎 / ドラム">${esc((base.former || []).join("\n"))}</textarea></label>
+      </div>
+      <label class="field wide"><span>似ている・おすすめのバンド（1行に1組）</span><textarea id="e-similar" rows="4" placeholder="NUMBER GIRL / 鋭いギター&#10;toe / 緻密なアンサンブル">${esc((base.similar || []).join("\n"))}</textarea></label>
+      <p class="fine">「名前 / 補足」の形で書くと、補足がパートや理由として表示されます。名前だけでも大丈夫です。</p>
+      <div class="ed-actions">
+        <button type="submit" class="save-btn">${m ? "保存する" : "登録する"}</button>
+        <button type="button" class="ghost-btn" id="e-cancel">キャンセル</button>
+      </div>
+      <p class="fine" id="e-err" hidden></p>
+    </form>
+  </section>`;
+}
+
+function bindEdit() {
+  const f = app.querySelector("#ed");
+  app.querySelector("#e-cancel").onclick = () => {
+    if (state.editing) { const r = MINEIDX[norm(state.editing)]; state = { view: "result", query: r.name, result: r }; }
+    else state = { view: "home" };
+    render();
+  };
+  f.addEventListener("submit", e => {
+    e.preventDefault();
+    const name = app.querySelector("#e-name").value.trim();
+    const err = app.querySelector("#e-err");
+    if (!name) { err.hidden = false; err.textContent = "バンド名を入れてください。"; return; }
+    const clash = mine.find(x => norm(x.name) === norm(name) && norm(x.name) !== norm(state.editing || ""));
+    if (clash) { err.hidden = false; err.textContent = "同じ名前のバンドがすでに登録されています。そちらを編集してください。"; return; }
+    const rec = {
+      name, region: app.querySelector('input[name="e-region"]:checked').value,
+      year: +app.querySelector("#e-year").value || 0,
+      years: app.querySelector("#e-years").value.trim(), origin: app.querySelector("#e-origin").value.trim(),
+      genres: [...app.querySelectorAll(".gpick input:checked")].map(i => i.value),
+      note: app.querySelector("#e-note").value.trim(),
+      members: lines(app.querySelector("#e-members").value), former: lines(app.querySelector("#e-former").value),
+      similar: lines(app.querySelector("#e-similar").value),
+    };
+    const wasEdit = !!state.editing;
+    if (state.editing) mine = mine.filter(x => norm(x.name) !== norm(state.editing));
+    mine.unshift(rec); saveMine();
+    trail = [name];
+    state = { view: "result", query: name, result: MINEIDX[norm(name)] };
+    remember(name); render(); window.scrollTo({ top: 0 });
+    toast(wasEdit ? "保存しました" : "登録しました");
+  });
+}
+
+function deleteMine(name) {
+  mine = mine.filter(x => norm(x.name) !== norm(name)); saveMine();
+  recent = recent.filter(r => norm(r) !== norm(name)); writeJSON(KEY_RECENT, recent);
+  trail = []; state = { view: "home" }; render(); toast(`「${name}」の登録を削除しました`);
+}
+
+let recent = readJSON(KEY_RECENT, []);
+let cache = readJSON(KEY_CACHE, {});
+let trail = [];            // names visited in this session, for the breadcrumb
+let state = { view: "home" };
+let ctl = null;
+
+
+function remember(name) {
+  recent = [name, ...recent.filter(r => norm(r) !== norm(name))].slice(0, 12);
+  writeJSON(KEY_RECENT, recent);
+}
+function putCache(query, res) {
+  cache[norm(query)] = res; cache[norm(res.name)] = res;
+  const keys = Object.keys(cache);
+  if (keys.length > 120) keys.slice(0, keys.length - 120).forEach(k => delete cache[k]);
+  writeJSON(KEY_CACHE, cache);
+}
+
+
+
+function go(name) {
+  name = String(name || "").trim();
+  if (!name) return;
+  if (ctl) ctl.abort();
+  const idx = trail.findIndex(t => norm(t) === norm(name));
+  trail = idx >= 0 ? trail.slice(0, idx + 1) : [...trail, name].slice(-8);
+  const hit = MINEIDX[norm(name)] || cache[norm(name)] || LIBIDX[norm(name)];
+  if (hit) { state = { view: "result", query: name, result: hit }; remember(hit.name); render(); return; }
+  search(name);
+}
+
+/* ---------- free online lookup: MusicBrainz + Wikidata + Wikipedia ---------- */
+const MB = "https://musicbrainz.org/ws/2/";
+let mbLast = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function getJSON(url, signal) {
+  const r = await fetch(url, { signal, headers: { Accept: "application/json" } });
+  if (r.status === 503 || r.status === 429) throw { code: "busy" };
+  if (!r.ok) throw { code: "http", status: r.status };
+  return r.json();
+}
+async function mb(path, signal) {
+  // MusicBrainz asks for at most one request per second
+  const wait = mbLast + 1100 - Date.now();
+  if (wait > 0) await sleep(wait);
+  mbLast = Date.now();
+  return getJSON(MB + path + (path.includes("?") ? "&" : "?") + "fmt=json", signal);
+}
+const luceneEsc = s => String(s).replace(/([+\-&|!(){}\[\]^"~*?:\\\/])/g, "\\$1");
+const yr = d => (d ? String(d).slice(0, 4) : "");
+const span = (b, e, ended) => { const a = yr(b), z = yr(e); return a || z ? `${a}–${z}` : ended ? "（終了）" : ""; };
+
+const INSTR = {
+  "lead vocals": "ボーカル", "vocals": "ボーカル", "background vocals": "コーラス", "guitar": "ギター", "electric guitar": "ギター",
+  "acoustic guitar": "アコースティックギター", "lead guitar": "リードギター", "rhythm guitar": "ギター", "bass guitar": "ベース",
+  "bass": "ベース", "electric bass guitar": "ベース", "double bass": "コントラバス", "drums (drum set)": "ドラム", "drums": "ドラム",
+  "drum machine": "ドラムマシン", "keyboard": "キーボード", "keyboards": "キーボード", "piano": "ピアノ", "synthesizer": "シンセ",
+  "organ": "オルガン", "violin": "バイオリン", "viola": "ヴィオラ", "cello": "チェロ", "saxophone": "サックス", "trumpet": "トランペット",
+  "trombone": "トロンボーン", "flute": "フルート", "percussion": "パーカッション", "turntables": "DJ", "sampler": "サンプラー",
+  "harmonica": "ハーモニカ", "banjo": "バンジョー", "mandolin": "マンドリン", "programming": "プログラミング", "electronic instruments": "電子楽器",
+};
+const AREA = { Japan: "日本", "United States": "アメリカ", "United Kingdom": "イギリス", England: "イギリス", Scotland: "スコットランド",
+  Ireland: "アイルランド", Canada: "カナダ", Australia: "オーストラリア", Germany: "ドイツ", France: "フランス", Sweden: "スウェーデン",
+  Iceland: "アイスランド", "South Korea": "韓国", Tokyo: "東京", Osaka: "大阪", Kyoto: "京都", Fukuoka: "福岡", Sapporo: "札幌",
+  Yokohama: "横浜", Nagoya: "名古屋", Kobe: "神戸", London: "ロンドン", Manchester: "マンチェスター", "New York": "ニューヨーク",
+  "Los Angeles": "ロサンゼルス", Seattle: "シアトル", Chicago: "シカゴ", Glasgow: "グラスゴー", Dublin: "ダブリン", Melbourne: "メルボルン" };
+const area = n => AREA[n] || n || "";
+const TAG2G = { indie: "indie", "indie rock": "indie", "indie pop": "indie", "math rock": "math", emo: "math", midwest: "math",
+  rock: "rock", "alternative rock": "alt", alternative: "alt", grunge: "alt", "post-punk": "alt", punk: "punk", "punk rock": "punk",
+  "pop punk": "punk", hardcore: "punk", "melodic hardcore": "punk", metal: "metal", "heavy metal": "metal", "hard rock": "metal",
+  "nu metal": "metal", pop: "pop", "j-pop": "pop", "city pop": "pop", "k-pop": "pop", electronic: "electro", electronica: "electro",
+  techno: "electro", "synth-pop": "electro", house: "electro", "visual kei": "vk", shoegaze: "shoe", "post-rock": "shoe",
+  "dream pop": "shoe", folk: "folk", "folk rock": "folk", psychedelic: "psy", "psychedelic rock": "psy", "progressive rock": "psy", krautrock: "psy" };
+const G2TAG = { indie: "indie", math: "math rock", rock: "rock", alt: "alternative rock", punk: "punk", metal: "metal", pop: "pop",
+  electro: "electronic", vk: "visual kei", shoe: "shoegaze", folk: "folk", psy: "psychedelic" };
+
+const commonsThumb = file => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=640`;
+
+async function wikiSummary(lang, title, signal) {
+  try {
+    const s = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, signal);
+    if (s.type === "disambiguation") return null;
+    return { extract: s.extract || "", url: s.content_urls?.desktop?.page || "", image: s.thumbnail?.source || "", lang };
+  } catch (e) { if (e?.name === "AbortError") throw e; return null; }
+}
+async function wikiFind(name, signal) {
+  // search Japanese then English Wikipedia; accept only a page whose title starts with the name
+  for (const [lang, hint] of [["ja", " バンド"], ["en", " band"]]) {
+    try {
+      const q = await getJSON(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srlimit=3&format=json&origin=*&srsearch=${encodeURIComponent(name + hint)}`, signal);
+      const hit = (q.query?.search || []).find(h => norm(h.title).replace(/\s*\(.*\)$/, "").startsWith(norm(name)) || norm(h.title).startsWith(norm(name)));
+      if (hit) { const s = await wikiSummary(lang, hit.title, signal); if (s) return s; }
+    } catch (e) { if (e?.name === "AbortError") throw e; }
+  }
+  return null;
+}
+async function wikidataInfo(qid, signal) {
+  try {
+    const d = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${qid}&props=sitelinks|claims&format=json&origin=*`, signal);
+    const e = d.entities?.[qid]; if (!e) return {};
+    const file = e.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    return { ja: e.sitelinks?.jawiki?.title, en: e.sitelinks?.enwiki?.title, image: file ? commonsThumb(file) : "" };
+  } catch (err) { if (err?.name === "AbortError") throw err; return {}; }
+}
+
+function relFrom(a) {
+  const bandEnded = !!a["life-span"]?.ended, bandEnd = yr(a["life-span"]?.end);
+  const out = new Map();
+  for (const r of a.relations || []) {
+    if (r["target-type"] !== "artist" || !r.artist) continue;
+    const back = r.direction === "backward";
+    let type = null, direction = "out", kind = r.artist.type === "Person" ? "artist" : "band";
+    if (r.type === "member of band") {
+      const relEnd = yr(r.end);
+      const left = a.type === "Person" ? !!r.ended : r.ended && !(bandEnded && (!relEnd || !bandEnd || relEnd >= bandEnd));
+      type = left ? "former" : "member";
+      if (!back) kind = "band";
+    } else if (/supporting musician/.test(r.type)) { type = "support"; direction = back ? "in" : "out"; }
+    else if (r.type === "collaboration") type = "collab";
+    else if (r.type === "subgroup") type = "collab";
+    else continue;
+    const parts = [...new Set((r.attributes || []).map(x => INSTR[x]).filter(Boolean))];
+    const note = [r.type === "subgroup" ? "派生グループ" : "", parts.join("・")].filter(Boolean).join(" / ");
+    const key = norm(r.artist.name) + "|" + type;
+    const prev = out.get(key);
+    const years = span(r.begin, r.end, r.ended);
+    if (prev) { if (years && !prev.years.includes(years)) prev.years = [prev.years, years].filter(Boolean).join(", "); if (!prev.note && note) prev.note = note; }
+    else out.set(key, { name: r.artist.name, kind, type, direction, years, note });
+  }
+  // someone listed both as member and former: keep member
+  const list = [...out.values()];
+  return list.filter(x => !(x.type === "former" && list.some(y => y.type === "member" && norm(y.name) === norm(x.name))));
+}
+
+async function onlineSearch(query, signal, onStep) {
+  onStep?.("MusicBrainzで探しています");
+  const q = luceneEsc(query);
+  const s = await mb(`artist/?limit=8&query=${encodeURIComponent(`artist:"${q}" OR alias:"${q}" OR sortname:"${q}"`)}`, signal);
+  const cands = (s.artists || []).filter(a => a.score >= 70);
+  const exact = cands.filter(a => norm(a.name) === norm(query) || (a.aliases || []).some(al => norm(al.name) === norm(query)));
+  const pool = exact.length ? exact : cands;
+  const pick = pool.find(a => a.type === "Group") || pool[0];
+
+  if (!pick) {
+    onStep?.("Wikipediaで探しています");
+    const w = await wikiFind(query, signal);
+    if (!w) return null;
+    return { name: query, kind: "band", origin: "", years: "", note: w.extract, related: [], similar: [], online: true, image: w.image, links: { wiki: w.url } };
+  }
+
+  onStep?.("メンバーとつながりを取得しています");
+  const a = await mb(`artist/${pick.id}?inc=artist-rels+url-rels+tags+genres+aliases`, signal);
+  const related = relFrom(a);
+  const tags = [...(a.genres || []), ...(a.tags || [])].sort((x, y) => (y.count || 0) - (x.count || 0)).map(t => t.name)
+    .filter((t, i, arr) => arr.indexOf(t) === i).slice(0, 6);
+  const genres = [...new Set(tags.map(t => TAG2G[t]).filter(Boolean))];
+
+  onStep?.("Wikipediaの紹介文と写真を取得しています");
+  const wd = (a.relations || []).find(r => r.type === "wikidata")?.url?.resource?.match(/Q\d+$/)?.[0];
+  let wiki = null, image = "";
+  if (wd) {
+    const info = await wikidataInfo(wd, signal);
+    image = info.image || "";
+    if (info.ja) wiki = await wikiSummary("ja", info.ja, signal);
+    if (!wiki && info.en) wiki = await wikiSummary("en", info.en, signal);
+  }
+  if (!wiki) wiki = await wikiFind(a.name, signal);
+  if (!image && wiki?.image) image = wiki.image;
+
+  // recommendations: the library's picks when we have them, otherwise groups sharing the top tag
+  let similar = LIBIDX[norm(a.name)]?.similar || [];
+  if (!similar.length && tags.length) {
+    onStep?.("同じジャンルのバンドを探しています");
+    try {
+      const tq = `tag:"${luceneEsc(tags[0])}" AND type:group` + (a.country ? ` AND country:${a.country}` : "");
+      const t = await mb(`artist/?limit=15&query=${encodeURIComponent(tq)}`, signal);
+      similar = (t.artists || []).filter(x => x.id !== a.id && !related.some(r => norm(r.name) === norm(x.name)))
+        .slice(0, 8).map(x => ({ name: x.name, kind: "band", reason: [`「${tags[0]}」`, yr(x["life-span"]?.begin) && `${yr(x["life-span"].begin)}年〜`, area(x.area?.name)].filter(Boolean).join(" · ") }));
+    } catch (e) { if (e?.name === "AbortError") throw e; }
+  }
+
+  const ls = a["life-span"] || {};
+  return {
+    name: a.name, kind: a.type === "Person" ? "artist" : "band",
+    origin: [area(a["begin-area"]?.name), area(a.area?.name)].filter((x, i, arr) => x && arr.indexOf(x) === i).join("・"),
+    years: span(ls.begin, ls.end, ls.ended) || "",
+    note: wiki?.extract ? (wiki.extract.length > 260 ? wiki.extract.slice(0, 258) + "…" : wiki.extract) : (a.disambiguation || ""),
+    related, similar, genres, tags, online: true, image,
+    sameTag: !LIBIDX[norm(a.name)]?.similar?.length,
+    links: { mb: `https://musicbrainz.org/artist/${a.id}`, wiki: wiki?.url || "" },
+  };
+}
+
+const NET_ERR = "情報を取得できませんでした。インターネットにつながっているか確認してください。claude.aiの中で開いている場合は、外部サイトにアクセスできないため使えません。";
+
+async function search(query, refresh = false) {
+  if (navigator.onLine === false) {
+    state = { view: "error", query, retry: true, message: "オフラインのため、収録されていないバンドは調べられません。収録バンドと自分で登録したバンドはオフラインでも見られます。" };
+    render(); return;
+  }
+  const my = new AbortController(); ctl = my;
+  state = { view: "loading", query, step: "準備しています" }; render();
+  const onStep = t => { if (ctl === my && state.view === "loading") { state.step = t; const el = document.getElementById("step"); if (el) el.textContent = t; } };
+  try {
+    let res = await onlineSearch(query, my.signal, onStep);
+    if (ctl !== my) return;
+    if (!res) { state = { view: "unknown", query }; render(); return; }
+    const lib = LIBIDX[norm(res.name)] || LIBIDX[norm(query)];
+    if (lib) { // keep the library's picks and genres when the online record lacks them
+      if (!res.similar.length) { res.similar = lib.similar; res.sameTag = false; }
+      if (!res.related.length) res.related = lib.related;
+      res.builtinBase = true;
+    }
+    putCache(query, res); remember(res.name);
+    if (res.image) setRemoteImg(res.name, res.image);
+    if (trail.length) trail[trail.length - 1] = res.name;
+    state = { view: "result", query, result: res }; render();
+  } catch (e) {
+    if (ctl !== my) return;
+    if (e?.name === "AbortError") { state = { view: "home" }; render(); return; }
+    state = { view: "error", query, retry: true,
+      message: e?.code === "busy" ? "MusicBrainzが混み合っています。少し待ってからもう一度試してください。" : NET_ERR };
+    render();
+  }
+}
+
+/* remote images (Wikipedia / Wikimedia Commons), remembered per name */
+const KEY_RIMG = "band-free-remote-img-v1";
+let remoteImg = readJSON(KEY_RIMG, {});
+function setRemoteImg(name, url) { remoteImg[norm(name)] = url; writeJSON(KEY_RIMG, remoteImg); }
+const triedWiki = new Set();
+async function enrichLibrary(r) {
+  // for built-in bands: fetch a Wikipedia photo and link once, in the background
+  const k = norm(r.name);
+  if (triedWiki.has(k) || r.links?.wiki) return;
+  triedWiki.add(k);
+  try {
+    const w = await wikiFind(r.name);
+    if (!w) return;
+    r.links = { ...(r.links || {}), wiki: w.url };
+    if (w.image && !remoteImg[k]) setRemoteImg(r.name, w.image);
+    if (state.view === "result" && norm(state.result?.name) === k) render();
+  } catch (e) {}
+}
+
+/* ---------- visual helpers ---------- */
+function hash(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const tilt = s => ((hash(s) % 7) - 3) * 0.8;
+
+function sleeve(name, withTitle = true) {
+  const h = hash(name), p = h % 6, a = (h >> 3) % 180, x = 20 + (h >> 7) % 60, y = 15 + (h >> 11) % 55, r = 22 + (h >> 13) % 22;
+  const P = "var(--pink)", B = "var(--blue)";
+  const L = [
+    [`radial-gradient(circle at ${x}% ${y}%, ${P} 0 ${r}%, transparent ${r + .5}%)`, `repeating-linear-gradient(${a}deg, ${B} 0 6px, transparent 6px 14px)`],
+    [`repeating-radial-gradient(circle at ${x}% ${y}%, ${P} 0 8px, transparent 8px 18px)`, `linear-gradient(${a}deg, ${B} 0 45%, transparent 45%)`],
+    [`radial-gradient(${P} 32%, transparent 35%) 0 0 / 12px 12px`, `radial-gradient(circle at ${x}% ${y}%, ${B} 0 ${r + 12}%, transparent ${r + 12.5}%)`],
+    [`conic-gradient(from ${a}deg at ${x}% ${y}%, ${P} 0 25%, transparent 0 50%, ${P} 0 75%, transparent 0)`, `repeating-radial-gradient(circle at 50% 115%, ${B} 0 3px, transparent 3px 11px)`],
+    [`linear-gradient(${a}deg, transparent 0 28%, ${P} 28% 58%, transparent 58%)`, `linear-gradient(${a + 90}deg, transparent 0 38%, ${B} 38% 72%, transparent 72%)`],
+    [`repeating-conic-gradient(from ${a}deg at ${x}% ${y}%, ${P} 0 9deg, transparent 9deg 20deg)`, `radial-gradient(circle at ${100 - x}% ${100 - y}%, ${B} 0 ${r}%, transparent ${r + .5}%)`],
+  ][p];
+  return `<div class="sleeve" aria-hidden="true"><div class="l1" style="background:${L[0]}"></div><div class="l2" style="background:${L[1]}"></div>
+    <span class="cat">BFT-${String(h % 900 + 100)}</span>${withTitle ? `<span class="title">${esc(name)}</span>` : ""}</div>`;
+}
+function record(text = "", cls = "") {
+  return `<div class="record ${cls}" aria-hidden="true"><div class="label"><span>${esc(text)}</span></div></div>`;
+}
+const ARM = `<svg class="arm" viewBox="0 0 100 150" aria-hidden="true">
+  <circle cx="85" cy="15" r="11" style="fill:var(--surface)" stroke-width="3"/>
+  <circle cx="85" cy="15" r="4" style="fill:var(--pink);stroke:none"/>
+  <line x1="85" y1="15" x2="38" y2="118" stroke-width="4" stroke-linecap="round"/>
+  <rect x="26" y="114" width="20" height="13" rx="2" transform="rotate(24 36 120)" style="fill:var(--blue)" stroke-width="2.5"/>
+</svg>`;
+
+const HEADS = {
+  member:    (k) => k === "band" ? ["Personnel", "メンバー"] : ["Bands", "在籍バンド"],
+  former:    (k) => k === "band" ? ["Former Members", "元メンバー"] : ["Past Bands", "過去に在籍"],
+  support:   (k, d) => d === "out" ? ["Supported", "サポートした"] : ["Support", "サポートメンバー"],
+  produce:   (k, d) => d === "out" ? ["Produced", "プロデュースした"] : ["Produced by", "プロデューサー"],
+  influence: (k, d) => d === "out" ? ["Influenced", "影響を与えた"] : ["Influences", "影響を受けた"],
+  collab:    () => ["Collaborations", "共演・コラボ"],
+};
+
+function searchForm(value = "", compact = false) {
+  return `<form class="search" id="sf" role="search">
+    <input id="q" value="${esc(value)}" placeholder="${compact ? "別のバンドを調べる" : "バンド名・アーティスト名"}" aria-label="バンド名・アーティスト名" autocomplete="off" enterkeyhint="search" list="libNames"><datalist id="libNames">${LIB.map(b => `<option value="${esc(b.name)}"></option>`).join("")}</datalist>
+    ${compact ? "" : `<kbd>/</kbd>`}
+    <button type="submit">調べる</button>
+  </form>`;
+}
+function topbar() {
+  return `<header class="topbar">
+    <button class="logo" type="button" id="home"><span class="mini-rec">${record("", "spin")}</span>バンド相関図</button>
+    ${searchForm("", true)}
+  </header>`;
+}
+function trailHtml() {
+  if (trail.length < 2) return "";
+  return `<nav class="trail" aria-label="たどった履歴"><span class="lbl">Route</span>${trail.map((t, i) => i === trail.length - 1
+    ? `<span class="here">${esc(t)}</span>`
+    : `<button type="button" data-go="${esc(t)}">${esc(t)}</button><span class="arr">→</span>`).join("")}</nav>`;
+}
+
+function artFor(name, withTitle = true) {
+  const src = imgOf(name) || remoteImg[norm(name)];
+  if (!src) return sleeve(name, withTitle);
+  return `<div class="sleeve photo"><img src="${src}" alt="${esc(name)}の画像">${withTitle ? `<span class="title">${esc(name)}</span>` : ""}</div>`;
+}
+function toast(msg) {
+  document.querySelector(".toast")?.remove();
+  const t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2400);
+}
+function setImage(name, file) {
+  if (!file || !/^image\//.test(file.type)) { toast("画像ファイルを選んでください"); return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const S = 560, side = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement("canvas"); c.width = c.height = Math.min(S, side);
+    c.getContext("2d").drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, c.width, c.height);
+    URL.revokeObjectURL(url);
+    const data = c.toDataURL("image/jpeg", 0.82);
+    images[norm(name)] = data;
+    try { localStorage.setItem(KEY_IMG, JSON.stringify(images)); toast("画像を設定しました"); }
+    catch (e) { toast("画像を表示しました（保存容量がいっぱいのため、次回は消えます）"); }
+    render();
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast("この画像は読み込めませんでした"); };
+  img.src = url;
+}
+
+
+/* ---------- browse by genre / era / region ---------- */
+const ERAS = { 1960: "60年代", 1970: "70年代", 1980: "80年代", 1990: "90年代", 2000: "00年代", 2010: "10年代〜" };
+const eraOf = y => (y >= 2010 ? 2010 : Math.floor(y / 10) * 10);
+let browse = (() => { try { return { region: "all", era: "all", genre: "all", ...JSON.parse(localStorage.getItem("band-lookup-browse-v1") || "{}"), limit: 18 }; } catch (e) { return { region: "all", era: "all", genre: "all", limit: 18 }; } })();
+let aiList = {}; // key -> {status, items, message}
+let aiCtl = null;
+
+function saveBrowse() { try { localStorage.setItem("band-lookup-browse-v1", JSON.stringify({ region: browse.region, era: browse.era, genre: browse.genre })); } catch (e) {} }
+function filtered() {
+  return allLib().filter(b => (browse.region === "all" || b.region === browse.region)
+    && (browse.era === "all" || eraOf(b.year) === +browse.era)
+    && (browse.genre === "all" || b.genres.includes(browse.genre)))
+    .sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || a.year - b.year);
+}
+const browseKey = () => `${browse.region}|${browse.era}|${browse.genre}`;
+function browseLabel() {
+  const parts = [];
+  if (browse.region !== "all") parts.push(browse.region === "J" ? "日本" : "海外");
+  if (browse.era !== "all") parts.push(ERAS[browse.era]);
+  if (browse.genre !== "all") parts.push(GENRES[browse.genre]);
+  return parts.join(" × ") || "すべて";
+}
+function chipRow(group, opts) {
+  return `<div class="filter-row" role="group" aria-label="${group === "region" ? "地域" : group === "era" ? "年代" : "ジャンル"}">
+    ${opts.map(([v, l]) => `<button type="button" class="fchip" data-f="${group}" data-v="${v}" aria-pressed="${String(browse[group]) === String(v)}">${l}</button>`).join("")}
+  </div>`;
+}
+function browseHtml() {
+  const list = filtered();
+  const shown = list.slice(0, browse.limit);
+  const ai = aiList[browseKey()];
+  const canAsk = browseKey() !== "all|all|all";
+  return `<section class="browse" id="browse">
+    <div class="browse-head">
+      <div><p class="kicker">Crate Digging</p><h2>ジャンル・年代から探す</h2></div>
+      <div class="head-side"><p class="count"><b>${allLib().length}</b>組を収録${mine.length ? `（うちマイ登録${mine.length}）` : ""}</p><button type="button" class="add-mine" id="addMine">＋ 自分でバンドを登録</button></div>
+    </div>
+    <div class="filters">
+      ${chipRow("region", [["all", "すべての地域"], ["J", "日本"], ["W", "海外"]])}
+      ${chipRow("era", [["all", "すべての年代"], ...Object.entries(ERAS)])}
+      ${chipRow("genre", [["all", "すべてのジャンル"], ...Object.entries(GENRES)])}
+    </div>
+    <p class="result-line"><span class="sel">${esc(browseLabel())}</span><span class="n">${list.length}組</span>
+      ${browseKey() !== "all|all|all" ? `<button type="button" class="link-btn" id="fReset">条件をリセット</button>` : ""}</p>
+    ${shown.length ? `<div class="bins">${shown.map(b => `<button type="button" class="bin" data-go="${esc(b.name)}">
+        <span class="bin-art">${artFor(b.name, false)}</span>
+        <span class="bin-txt"><span class="bin-name">${esc(b.name)}${b.mine ? `<span class="my-badge">MY</span>` : ""}</span>
+        <span class="bin-meta">${esc([b.years, (b.origin || "").split("・")[0]].filter(Boolean).join(" · ") || "—")}</span>
+        <span class="bin-tags">${b.genres.filter(g => g !== "indie").slice(0, 2).map(g => GENRES[g]).join(" / ") || (b.genres.includes("indie") ? "インディーズ" : "")}</span></span>
+      </button>`).join("")}</div>` : `<p class="fine">この条件に合う収録バンドはありません。下のボタンでMusicBrainzから探せます。</p>`}
+    ${list.length > shown.length ? `<button type="button" class="ghost-btn more" id="fMore">さらに表示（残り${list.length - shown.length}組）</button>` : ""}
+    ${canAsk ? `<div class="ai-box">
+      ${!ai ? `<button type="button" class="ai-btn" id="aiAsk"><span class="ai-dot"></span>「${esc(browseLabel())}」のバンドをMusicBrainzでもっと探す</button>
+        <p class="fine">世界中の音楽データベースMusicBrainzから、条件に合う収録外のバンドを探します。</p>`
+      : ai.status === "loading" ? `<div class="ai-loading"><div class="eq" aria-hidden="true">${"<i></i>".repeat(8)}</div><span>「${esc(browseLabel())}」のバンドを探しています…</span><button type="button" class="link-btn" id="aiStop">中止</button></div>`
+      : ai.status === "error" ? `<p class="fine">${esc(ai.message)}</p><button type="button" class="ghost-btn" id="aiAsk">もう一度試す</button>`
+      : `<h3 class="ai-title"><span class="kicker">From MusicBrainz</span>MusicBrainzで見つかった「${esc(browseLabel())}」のバンド</h3>
+        <ul class="ai-list">${ai.items.map(x => `<li><button type="button" data-go="${esc(x.name)}">
+          <span class="ai-name">${esc(x.name)}${x.years || x.origin ? `<small>${esc([x.years, x.origin].filter(Boolean).join(" · "))}</small>` : ""}</span>
+          <span class="ai-note">${esc(x.note)}</span><span class="go" aria-hidden="true">→</span></button></li>`).join("")}</ul>
+        <button type="button" class="link-btn" id="aiAgain">続きを探す</button>`}
+    </div>` : ""}
+  </section>`;
+}
+
+async function askMore(again = false) {
+  const key = browseKey();
+  if (aiCtl) aiCtl.abort();
+  const my = new AbortController(); aiCtl = my;
+  const prev = aiList[key];
+  const offset = again && prev?.offset != null ? prev.offset + 25 : 0;
+  const exclude = new Set([...filtered().map(b => norm(b.name)), ...(again && prev?.items ? prev.items.map(x => norm(x.name)) : [])]);
+  aiList[key] = { status: "loading" }; render(); document.getElementById("browse")?.scrollIntoView({ block: "nearest" });
+  const parts = ["type:group"];
+  if (browse.genre !== "all") parts.push(`tag:"${luceneEsc(G2TAG[browse.genre])}"`);
+  if (browse.region === "J") parts.push("country:JP");
+  if (browse.region === "W") parts.push("NOT country:JP");
+  if (browse.era !== "all") { const y = +browse.era; parts.push(`begin:[${y} TO ${y >= 2010 ? 2099 : y + 9}\\-12\\-31]`); }
+  try {
+    const res = await mb(`artist/?limit=25&offset=${offset}&query=${encodeURIComponent(parts.join(" AND "))}`, my.signal);
+    if (aiCtl !== my) return;
+    const items = (res.artists || []).filter(x => x.name && !exclude.has(norm(x.name))).map(x => ({
+      name: x.name, years: span(x["life-span"]?.begin, x["life-span"]?.end, x["life-span"]?.ended),
+      origin: area(x.area?.name), note: x.disambiguation || (x.tags || []).sort((p, q) => q.count - p.count).slice(0, 3).map(t => t.name).join(" / "),
+    }));
+    aiList[key] = items.length ? { status: "done", items, offset } : { status: "error", message: "この条件ではこれ以上見つかりませんでした。条件を変えて試してください。" };
+  } catch (e) {
+    if (aiCtl !== my) return;
+    aiList[key] = e?.name === "AbortError" ? undefined : { status: "error", message: e?.code === "busy" ? "MusicBrainzが混み合っています。少し待ってからもう一度試してください。" : NET_ERR };
+  }
+  aiCtl = null;
+  if (state.view === "home") { render(); document.getElementById("browse")?.scrollIntoView({ block: "nearest" }); }
+}
+
+/* ---------- install as an app ---------- */
+let installEvt = null;
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const installDismissed = () => { try { return localStorage.getItem("band-free-install-dismissed") === "1"; } catch (e) { return false; } };
+function installHtml() {
+  if (isStandalone() || installDismissed()) return "";
+  if (installEvt) return `<div class="install"><span class="install-ico" aria-hidden="true"></span>
+    <p><b>アプリとして使う</b>ホーム画面に追加すると、アイコンからすぐ開けます。</p>
+    <button type="button" class="install-btn" id="instGo">ホーム画面に追加</button><button type="button" class="install-x" id="instX" aria-label="閉じる">×</button></div>`;
+  if (isIOS()) return `<div class="install"><span class="install-ico" aria-hidden="true"></span>
+    <p><b>アプリとして使う</b>Safariの共有ボタン<span class="share-ico" aria-hidden="true">⬆︎</span>から「ホーム画面に追加」を選ぶと、アイコンからすぐ開けます。</p>
+    <button type="button" class="install-x" id="instX" aria-label="閉じる">×</button></div>`;
+  return "";
+}
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; if (state.view === "home") render(); });
+window.addEventListener("appinstalled", () => { installEvt = null; if (state.view === "home") render(); toast("ホーム画面に追加しました"); });
+function bindInstall() {
+  app.querySelector("#instGo")?.addEventListener("click", async () => {
+    if (!installEvt) return;
+    installEvt.prompt();
+    try { await installEvt.userChoice; } catch (e) {}
+    installEvt = null; render();
+  });
+  app.querySelector("#instX")?.addEventListener("click", () => { try { localStorage.setItem("band-free-install-dismissed", "1"); } catch (e) {} render(); });
+}
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+window.addEventListener("online", () => { if (state.view === "home") render(); });
+window.addEventListener("offline", () => { if (state.view === "home") render(); toast("オフラインになりました。収録バンドは引き続き見られます"); });
+
+function bindBrowse() {
+  app.querySelectorAll(".fchip").forEach(b => b.onclick = () => {
+    browse[b.dataset.f] = b.dataset.v; browse.limit = 18; saveBrowse();
+    const y = window.scrollY; render(); window.scrollTo({ top: y });
+  });
+  app.querySelector("#fReset")?.addEventListener("click", () => { browse.region = browse.era = browse.genre = "all"; browse.limit = 18; saveBrowse(); const y = window.scrollY; render(); window.scrollTo({ top: y }); });
+  app.querySelector("#fMore")?.addEventListener("click", () => { browse.limit += 36; const y = window.scrollY; render(); window.scrollTo({ top: y }); });
+  app.querySelector("#addMine")?.addEventListener("click", () => openEditor());
+  app.querySelector("#aiAsk")?.addEventListener("click", () => askMore(false));
+  app.querySelector("#aiAgain")?.addEventListener("click", () => askMore(true));
+  app.querySelector("#aiStop")?.addEventListener("click", () => aiCtl?.abort());
+}
+
+/* ---------- views ---------- */
+function viewHome() {
+  return `<section class="view">
+    <div class="hero">
+      <div class="hero-copy">
+        <p class="kicker">Band Family Tree — Liner Notes Search</p>
+        <h1><span class="misreg" data-text="バンド">バンド</span><span class="misreg" data-text="相関図">相関図</span></h1>
+        <p class="lede">名前を入れると、<b>メンバー・元メンバー・プロデューサー・影響関係</b>と、<b>似ているおすすめのアーティスト</b>がわかります。定番の${LIB.length}組はすぐ表示、それ以外もWikipediaと音楽データベースからその場で探します。出てきた名前をタップして、つながりをどこまでもたどれます。</p>
+        ${searchForm()}
+        ${installHtml()}
+        ${navigator.onLine === false ? `<p class="offline-note">オフラインです。収録バンドと自分で登録したバンドは見られます。</p>` : ""}
+      </div>
+      <div class="hero-art">${record("Side A · Family Tree", "spin")}<span class="sticker">DIG<br>DEEPER</span></div>
+    </div>
+    <div class="shelf">
+      ${recent.length ? `<section><h2>最近調べた<span class="kicker">Recently Played</span><button class="clear" type="button" id="clr">履歴を消す</button></h2>
+        <div class="stickers">${recent.map(r => `<button class="stk" type="button" style="--r:${tilt(r)}deg" data-go="${esc(r)}">${esc(r)}</button>`).join("")}</div></section>` : ""}
+      <section><h2>例えば<span class="kicker">Try These</span></h2>
+        <div class="stickers">${EXAMPLES.map(r => `<button class="stk alt" type="button" style="--r:${tilt(r)}deg" data-go="${esc(r)}">${esc(r)}</button>`).join("")}</div></section>
+    </div>
+    ${browseHtml()}
+    <p class="fine">定番バンドは収録データからすぐ表示します。それ以外は、無料の音楽データベースMusicBrainzとWikipediaからその場で取得します。登録やAPIキーは不要です。</p>
+  </section>`;
+}
+
+function viewLoading() {
+  return `${topbar()}<section class="view">
+    ${trailHtml()}
+    <div class="loading-stage">
+      <div class="turntable">${record(state.query, "spin fast")}${ARM}</div>
+      <div class="loading-copy">
+        <p class="kicker">Now Digging</p>
+        <h2><span class="misreg" data-text="${esc(state.query)}">${esc(state.query)}</span></h2>
+        <div class="eq" aria-hidden="true">${"<i></i>".repeat(12)}</div>
+        <p>収録されていないので、MusicBrainzとWikipediaからその場で探しています。数秒〜10秒ほどかかります。</p>
+        <p class="kicker" id="step">${esc(state.step || "")}</p>
+        <button class="ghost-btn" type="button" id="stop">中止</button>
+      </div>
+    </div>
+  </section>`;
+}
+
+function viewNotice() {
+  const unknown = state.view === "unknown";
+  return `${topbar()}<section class="view">
+    ${trailHtml()}
+    <div class="notice">
+      ${record("No Data", "broken")}
+      <div class="stack">
+        <p class="kicker">${unknown ? "Not Found" : "Skipped"}</p>
+        <h1>${esc(state.query)}</h1>
+        <p>${unknown ? "確かな情報が見つかりませんでした。正式な表記や英語表記で試してみてください。" : esc(state.message)}</p>
+        <div class="mine-tools">
+        ${state.retry ? `<button class="ghost-btn" type="button" id="retry">もう一度調べる</button>` : ""}
+        <button class="add-mine" type="button" id="addMineN">＋ 「${esc(state.query)}」を自分で登録する</button></div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function viewResult() {
+  const r = state.result;
+  const groups = {};
+  r.related.forEach(x => {
+    const [en, ja] = HEADS[x.type](r.kind, x.direction);
+    (groups[x.type + "|" + en] ||= { type: x.type, en, ja, items: [] }).items.push(x);
+  });
+  const sorted = Object.values(groups).sort((a, b) => REL_KEYS.indexOf(a.type) - REL_KEYS.indexOf(b.type));
+  const stamps = [
+    `<span class="stamp k-${r.kind}" style="--r:-2deg">${r.kind === "band" ? "BAND / バンド" : "ARTIST / アーティスト"}</span>`,
+    r.years ? `<span class="stamp plain" style="--r:1.5deg">${esc(r.years)}</span>` : "",
+    r.origin ? `<span class="stamp plain" style="--r:-1deg">${esc(r.origin)}</span>` : "",
+    ...(r.tags || []).slice(0, 3).map((t, i) => `<span class="stamp plain" style="--r:${i % 2 ? 1 : -1}deg">#${esc(t)}</span>`),
+    r.builtin ? `<span class="stamp lib" style="--r:2deg">収録データ</span>` : "",
+    r.mine ? `<span class="stamp mine" style="--r:2deg">マイ登録</span>` : "",
+    r.online ? `<span class="stamp lib" style="--r:2deg">ネットから取得</span>` : "",
+  ].join("");
+  return `${topbar()}<section class="view">
+    ${trailHtml()}
+    <div class="flyer">
+      <div class="flyer-copy">
+        <p class="kicker">${r.kind === "band" ? "Band Profile" : "Artist Profile"}</p>
+        <h1><span class="misreg" data-text="${esc(r.name)}">${esc(r.name)}</span></h1>
+        <div class="stamps">${stamps}</div>
+        ${r.note ? `<p class="note">${esc(r.note)}</p>` : ""}
+      </div>
+      <div class="flyer-side">
+        <div class="flyer-art" id="art">${record(r.name, "peek spin")}${artFor(r.name, false)}</div>
+        <div class="art-tools">
+          <a class="tool" href="https://www.google.com/search?tbm=isch&amp;q=${encodeURIComponent(r.name + (r.kind === "band" ? " バンド" : ""))}" target="_blank" rel="noopener">画像を検索 ↗</a>
+          <label class="tool">${imgOf(r.name) ? "画像を変える" : "画像を設定"}<input type="file" id="imgFile" accept="image/*"></label>
+          ${imgOf(r.name) ? `<button class="tool quiet" type="button" id="imgClear">外す</button>` : ""}
+        </div>
+        <p class="art-hint">Wikipediaに写真があれば自動で表示します。好きな画像にしたいときは「画像を設定」で選ぶか、ここにドラッグ＆ドロップ（コピーした画像の貼り付けも可）すると、このブラウザに保存されて次からも表示されます。</p>
+      </div>
+    </div>
+
+    ${sorted.length ? `<div class="liner">${sorted.map(g => `
+      <section class="credits c-${g.type}">
+        <h2><span class="en">${g.en}</span><span class="ja">${g.ja}</span><span class="n">${String(g.items.length).padStart(2, "0")}</span></h2>
+        <ul>${g.items.map(x => `<li><button type="button" class="credit" data-go="${esc(x.name)}">
+          <span class="who">${esc(x.name)}${x.note ? `<small>${esc(x.note)}</small>` : ""}</span>
+          <span class="lead"></span>
+          ${x.years ? `<span class="when">${esc(x.years)}</span>` : ""}
+          <span class="go" aria-hidden="true">→</span></button></li>`).join("")}</ul>
+      </section>`).join("")}</div>` : `<p class="fine">関係する人物やバンドは見つかりませんでした。</p>`}
+
+    ${r.similar?.length ? `<section class="recs">
+      <div class="recs-head"><p class="kicker">If You Like This, Dig These</p>
+        <h2>${r.sameTag ? `<em>${esc(r.name)}</em> と同じジャンルのバンド` : `<em>${esc(r.name)}</em> が好きなら`}</h2></div>
+      <div class="crate">${r.similar.map(x => `<button type="button" class="lp" data-go="${esc(x.name)}">
+        <div class="lp-art">${record(x.name)}${artFor(x.name)}</div>
+        <span class="lp-name">${esc(x.name)}<span class="tag">${x.kind === "band" ? "Band" : "Artist"}</span></span>
+        ${x.reason ? `<span class="lp-why">${esc(x.reason)}</span>` : ""}
+      </button>`).join("")}</div>
+    </section>` : ""}
+
+    <div class="foot">
+      <p class="fine">${r.online ? "情報はMusicBrainz（CC0）とWikipedia（CC BY-SA）から取得しています。" : r.mine ? "あなたが登録した情報です。" : "収録データです。最近のメンバーチェンジなどは反映されていないことがあります。"}
+        ${r.links?.mb ? `<a class="src" href="${esc(r.links.mb)}" target="_blank" rel="noopener">MusicBrainz ↗</a>` : ""}
+        ${r.links?.wiki ? `<a class="src" href="${esc(r.links.wiki)}" target="_blank" rel="noopener">Wikipedia ↗</a>` : ""}</p>
+      ${r.mine ? `<div class="mine-tools">
+        ${state.confirmDelete ? `<span class="fine">この登録を削除しますか？</span><button class="danger-btn solid" type="button" id="delYes">削除する</button><button class="ghost-btn" type="button" id="delNo">やめる</button>`
+        : `<button class="ghost-btn" type="button" id="editMine">登録を編集</button><button class="danger-btn" type="button" id="delMine">削除</button>`}</div>`
+      : `<button class="link-btn" type="button" id="refresh">${r.builtin ? "ネットの最新情報で調べ直す" : "最新情報に更新"}</button>`}
+    </div>
+  </section>`;
+}
+
+let lastView = null;
+function render() {
+  const v = state.view;
+  app.classList.toggle("still", v === lastView && v === "home");
+  const firstHome = v === "home" && lastView !== "home";
+  lastView = v;
+  app.innerHTML = v === "home" ? viewHome() : v === "loading" ? viewLoading() : v === "result" ? viewResult() : v === "edit" ? viewEdit() : viewNotice();
+  if (v === "edit") bindEdit();
+  app.querySelector("#addMineN")?.addEventListener("click", () => openEditor(null, state.query));
+  app.querySelector("#editMine")?.addEventListener("click", () => openEditor(state.result.name));
+  app.querySelector("#delMine")?.addEventListener("click", () => { state.confirmDelete = true; render(); });
+  app.querySelector("#delNo")?.addEventListener("click", () => { state.confirmDelete = false; render(); });
+  app.querySelector("#delYes")?.addEventListener("click", () => deleteMine(state.result.name));
+
+  app.querySelector("#sf").addEventListener("submit", e => { e.preventDefault(); go(app.querySelector("#q").value); window.scrollTo({ top: 0 }); });
+  app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { go(b.dataset.go); window.scrollTo({ top: 0 }); });
+  app.querySelector("#home")?.addEventListener("click", () => { if (ctl) ctl.abort(); ctl = null; trail = []; state = { view: "home" }; render(); });
+  app.querySelector("#stop")?.addEventListener("click", () => ctl?.abort());
+  app.querySelector("#retry")?.addEventListener("click", () => search(state.query));
+  app.querySelector("#refresh")?.addEventListener("click", () => {
+    const q = state.result.name; delete cache[norm(q)]; delete cache[norm(state.query)]; writeJSON(KEY_CACHE, cache);
+    search(q, true);
+  });
+  app.querySelector("#clr")?.addEventListener("click", () => { recent = []; writeJSON(KEY_RECENT, recent); render(); });
+  if (v === "home") { bindBrowse(); bindInstall(); }
+  if (firstHome && matchMedia("(pointer: fine)").matches) app.querySelector("#q").focus({ preventScroll: true });
+  if (v === "result" && state.result.builtin && !state.result.online) enrichLibrary(state.result);
+  if (v === "result") {
+    const name = state.result.name;
+    app.querySelector("#imgFile").addEventListener("change", e => setImage(name, e.target.files[0]));
+    app.querySelector("#imgClear")?.addEventListener("click", () => {
+      delete images[norm(name)]; try { localStorage.setItem(KEY_IMG, JSON.stringify(images)); } catch (e) {}
+      render(); toast("画像を外しました");
+    });
+    const art = app.querySelector("#art");
+    art.addEventListener("dragover", e => { e.preventDefault(); art.classList.add("drag"); });
+    art.addEventListener("dragleave", () => art.classList.remove("drag"));
+    art.addEventListener("drop", e => { e.preventDefault(); art.classList.remove("drag"); setImage(name, e.dataTransfer.files[0]); });
+  }
+}
+
+document.addEventListener("paste", e => {
+  if (state.view !== "result") return;
+  const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/"));
+  if (f) { e.preventDefault(); setImage(state.result.name, f); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) { e.preventDefault(); app.querySelector("#q")?.focus(); }
+});
+
+render();
+</script>
+</body>
+</html>
