@@ -366,7 +366,7 @@ const REL = {
 const REL_KEYS = Object.keys(REL);
 const EXAMPLES = ["NUMBER GIRL", "東京事変", "YMO", "くるり", "Radiohead", "King Gizzard & the Lizard Wizard"];
 const KEY_RECENT = "band-lookup-recent-v1";
-const KEY_CACHE = "band-free-cache-v1";
+const KEY_CACHE = "band-free-cache-v2";
 const KEY_IMG = "band-lookup-img-v1";
 let images = (() => { try { return JSON.parse(localStorage.getItem(KEY_IMG)) || {}; } catch (e) { return {}; } })();
 const imgOf = name => images[String(name || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim()] || null;
