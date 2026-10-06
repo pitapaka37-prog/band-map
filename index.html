@@ -1149,11 +1149,19 @@ const G2TAG = { indie: "indie", math: "math rock", rock: "rock", alt: "alternati
 
 const commonsThumb = file => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=640`;
 
+// 音楽のバンド・アーティストのページかどうか（Wikipediaの短い説明文と冒頭で判定）
+const MUSIC_RE = /バンド|ミュージシャン|歌手|シンガー|ソングライター|ギタリスト|ベーシスト|ドラマー|キーボーディスト|作曲家|音楽家|音楽グループ|音楽ユニット|アイドルグループ|ボーカルグループ|ヴォーカルグループ|ラッパー|ヒップホップ|ロック|ポップス|DJ|プロデューサー（音楽|\bband\b|musician|singer|rapper|guitarist|bassist|drummer|keyboardist|composer|songwriter|musical (group|duo|ensemble|project)|music (group|duo|project)|(pop|rock|idol|vocal|boy|girl) (group|band)|record producer|hip[ -]hop|\bDJ\b/i;
+const NOT_MUSIC_RE = /rubber band|wristband|broadband|band-?aid|bandwidth|ゴムバンド|ヘアバンド|リストバンド|ブロードバンド/i;
+function isMusicPage(w) {
+  if (!w) return false;
+  const t = w.description || (w.extract || "").slice(0, 160);
+  return MUSIC_RE.test(t) && !NOT_MUSIC_RE.test(t);
+}
 async function wikiSummary(lang, title, signal) {
   try {
     const s = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, signal);
     if (s.type === "disambiguation") return null;
-    return { extract: s.extract || "", url: s.content_urls?.desktop?.page || "", image: s.thumbnail?.source || "", lang };
+    return { extract: s.extract || "", description: s.description || "", url: s.content_urls?.desktop?.page || "", image: s.thumbnail?.source || "", lang };
   } catch (e) { if (e?.name === "AbortError") throw e; return null; }
 }
 async function wikiFind(name, signal) {
@@ -1162,7 +1170,7 @@ async function wikiFind(name, signal) {
     try {
       const q = await getJSON(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srlimit=3&format=json&origin=*&srsearch=${encodeURIComponent(name + hint)}`, signal);
       const hit = (q.query?.search || []).find(h => norm(h.title).replace(/\s*\(.*\)$/, "").startsWith(norm(name)) || norm(h.title).startsWith(norm(name)));
-      if (hit) { const s = await wikiSummary(lang, hit.title, signal); if (s) return s; }
+      if (hit) { const s = await wikiSummary(lang, hit.title, signal); if (isMusicPage(s)) return s; }
     } catch (e) { if (e?.name === "AbortError") throw e; }
   }
   return null;
@@ -1209,7 +1217,7 @@ async function onlineSearch(query, signal, onStep) {
   onStep?.("MusicBrainzで探しています");
   const q = luceneEsc(query);
   const s = await mb(`artist/?limit=8&query=${encodeURIComponent(`artist:"${q}" OR alias:"${q}" OR sortname:"${q}"`)}`, signal);
-  const cands = (s.artists || []).filter(a => a.score >= 70);
+  const cands = (s.artists || []).filter(a => a.score >= 90);
   const exact = cands.filter(a => norm(a.name) === norm(query) || (a.aliases || []).some(al => norm(al.name) === norm(query)));
   const pool = exact.length ? exact : cands;
   const pick = pool.find(a => a.type === "Group") || pool[0];
@@ -1593,7 +1601,7 @@ function viewNotice() {
       <div class="stack">
         <p class="kicker">${unknown ? "Not Found" : "Skipped"}</p>
         <h1>${esc(state.query)}</h1>
-        <p>${unknown ? "確かな情報が見つかりませんでした。正式な表記や英語表記で試してみてください。" : esc(state.message)}</p>
+        <p>${unknown ? "音楽のバンド・アーティストとしては見つかりませんでした。このアプリはバンドやアーティストの名前だけを検索できます。正式な表記や英語表記で試してみてください。" : esc(state.message)}</p>
         <div class="mine-tools">
         ${state.retry ? `<button class="ghost-btn" type="button" id="retry">もう一度調べる</button>` : ""}
         <button class="add-mine" type="button" id="addMineN">＋ 「${esc(state.query)}」を自分で登録する</button></div>
