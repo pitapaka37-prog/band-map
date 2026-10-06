@@ -1217,7 +1217,9 @@ async function onlineSearch(query, signal, onStep) {
   onStep?.("MusicBrainzで探しています");
   const q = luceneEsc(query);
   const s = await mb(`artist/?limit=8&query=${encodeURIComponent(`artist:"${q}" OR alias:"${q}" OR sortname:"${q}"`)}`, signal);
-  const cands = (s.artists || []).filter(a => a.score >= 90);
+  // キャラクター（アニメ・漫画の登場人物など）や「その他」は対象外
+  const MUSIC_TYPES = ["Group", "Person", "Orchestra", "Choir", undefined, null];
+  const cands = (s.artists || []).filter(a => a.score >= 90 && MUSIC_TYPES.includes(a.type));
   const exact = cands.filter(a => norm(a.name) === norm(query) || (a.aliases || []).some(al => norm(al.name) === norm(query)));
   const pool = exact.length ? exact : cands;
   const pick = pool.find(a => a.type === "Group") || pool[0];
@@ -1246,6 +1248,12 @@ async function onlineSearch(query, signal, onStep) {
     if (!wiki && info.en) wiki = await wikiSummary("en", info.en, signal);
   }
   if (!wiki) wiki = await wikiFind(a.name, signal);
+  // 個人などバンド以外は、音楽活動の裏づけがあるときだけ表示する
+  const groupLike = ["Group", "Orchestra", "Choir"].includes(a.type);
+  const wikiIsMusic = !wiki || isMusicPage(wiki);
+  const hasBand = related.some(r => r.type === "member" || r.type === "former");
+  if (!groupLike && (!wikiIsMusic || (!hasBand && !tags.length))) return null;
+  if (wiki && !isMusicPage(wiki)) wiki = null;
   if (!image && wiki?.image) image = wiki.image;
 
   // recommendations: the library's picks when we have them, otherwise groups sharing the top tag
